@@ -19,8 +19,8 @@ the KUSP Python server, which uses sockets to communicate.
 
 <img src="KUSP_mech.png" width='600px'>
 
-While this is easy and quick, it is  not the most efficient way to run ML models. Besides 
-the overhead of Python interpreter, you also have the communication overhead between 
+While this is easy and quick, it is  not the most efficient way to run ML models. Besides
+the overhead of Python interpreter, you also have the communication overhead between
 Python and C++ code, and overhead of the data transfer process, which is usually 100-400ms
 per call. This is not a problem for very large models, but for small models, this overhead
 can be significant.

@@ -1,7 +1,6 @@
-from ase.calculators.kim import KIM
-from ase import Atoms, io
 import numpy as np
-
+from ase import Atoms, io
+from ase.calculators.kim import KIM
 
 # Initialize KIM Model
 model = KIM("KIM_SOCKS__MO_000000000000_000")
@@ -17,4 +16,3 @@ forces = config.get_forces()
 
 print(f"Forces: {forces}")
 print(f"Energy: {energy}")
-

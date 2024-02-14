@@ -22,5 +22,3 @@ fix 1 all nvt temp 300.0 300.0 $(100.0*dt)
 timestep 0.001
 thermo 1
 run    10000
-
-

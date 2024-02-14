@@ -1,11 +1,12 @@
-import yaml
 import socket
 import struct
 import time
-import numpy as np
 from enum import Enum
+from typing import Any, Callable
+
+import numpy as np
+import yaml
 from loguru import logger
-from typing import Callable, Any
 
 
 class Modes(Enum):
@@ -41,13 +42,15 @@ class Server:
     2. UNIX_SOCKETS
     3. SHARED_MEM
     """
-    def __init__(self,
-                 host: str = "127.0.0.1",
-                 port: int = 12345,
-                 mode: Modes = Modes.IP_SOCKETS,
-                 max_connections: int = 1,
-                 buffer_size: int = 1024,
-                 ):
+
+    def __init__(
+        self,
+        host: str = "127.0.0.1",
+        port: int = 12345,
+        mode: Modes = Modes.IP_SOCKETS,
+        max_connections: int = 1,
+        buffer_size: int = 1024,
+    ):
         self.host = host
         self.port = port
         self.mode = mode
@@ -66,7 +69,9 @@ class Server:
         """
         Start the server
         """
-        self.server_socket = socket.socket(Modes.to_socket_family(self.mode), socket.SOCK_STREAM)
+        self.server_socket = socket.socket(
+            Modes.to_socket_family(self.mode), socket.SOCK_STREAM
+        )
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server_socket.bind((self.host, self.port))
         self.server_socket.listen()
@@ -115,7 +120,9 @@ class Server:
         """
         raise NotImplementedError
 
-    def prepare_model_inputs(self, atomic_numbers, positions, contributing_atoms, **kwargs):
+    def prepare_model_inputs(
+        self, atomic_numbers, positions, contributing_atoms, **kwargs
+    ):
         """
         Prepare the model inputs
         """
@@ -132,4 +139,3 @@ class Server:
         Prepare the model outputs
         """
         raise NotImplementedError
-

@@ -12,10 +12,11 @@ Incoming data specification:
 
 import socket
 import struct
+import time
+from typing import Any, Callable, Union
+
 import numpy as np
 from loguru import logger
-from typing import Callable, Any, Union
-import time
 
 from .server import Server
 
@@ -23,17 +24,17 @@ BUFFER_SIZE = 1024
 
 
 def get_all_data(client_socket, size):
-    all_data = b''
-    #while True:
+    all_data = b""
+    # while True:
     data = client_socket.recv(size)
-        #if not data or len(data) < BUFFER_SIZE:
-        #    break
+    # if not data or len(data) < BUFFER_SIZE:
+    #    break
     all_data += data
     return all_data, len(all_data)
 
 
 class KIMServe(Server):
-    def __init__(self, exec_func:Callable[..., Any], configuration: Union[dict, str]):
+    def __init__(self, exec_func: Callable[..., Any], configuration: Union[dict, str]):
         if isinstance(configuration, dict):
             optional_args = configuration.get("optional", {})
             server_args = configuration.get("server", {})
@@ -55,40 +56,56 @@ class KIMServe(Server):
             with client_socket:
                 logger.info(f"kim server connected from {client_address}")
 
-                while True: # Continuous loop to keep connection open
+                while True:  # Continuous loop to keep connection open
                     try:
                         # Receive the first 4 bytes to determine integer width
                         data = client_socket.recv(4)
                         if not data:
                             break  # Break the loop if client closes the connection or sends empty data
 
-                        int_width = struct.unpack('i', data)[0]
+                        int_width = struct.unpack("i", data)[0]
                         int_type_py = np.int32 if int_width == 4 else np.int64
 
                         # Next int_width bytes: number of atoms (n_atoms), default int_width integer
-                        n_atoms = struct.unpack(f'i', client_socket.recv(int_width))[0]
+                        n_atoms = struct.unpack(f"i", client_socket.recv(int_width))[0]
 
                         # Next int_width x n_atoms bytes: atomic numbers
-                        b_atomic_numbers, n_bytes = get_all_data(client_socket, size=int_width * n_atoms)
-                        atomic_numbers = np.frombuffer(b_atomic_numbers, dtype=int_type_py)
+                        b_atomic_numbers, n_bytes = get_all_data(
+                            client_socket, size=int_width * n_atoms
+                        )
+                        atomic_numbers = np.frombuffer(
+                            b_atomic_numbers, dtype=int_type_py
+                        )
 
                         # Next 8 x 3 x n_atoms bytes: positions of atoms (x, y, z), double precision
-                        b_positions, n_bytes = get_all_data(client_socket, size=8 * 3 * n_atoms)
-                        positions = np.frombuffer(b_positions, dtype=np.float64).reshape((n_atoms, 3))
+                        b_positions, n_bytes = get_all_data(
+                            client_socket, size=8 * 3 * n_atoms
+                        )
+                        positions = np.frombuffer(
+                            b_positions, dtype=np.float64
+                        ).reshape((n_atoms, 3))
 
                         # Next int_width x n_atoms bytes: Which atoms to compute energy for (contributing atoms)
-                        b_contributing_atoms, n_bytes = get_all_data(client_socket, size=int_width * n_atoms)
+                        b_contributing_atoms, n_bytes = get_all_data(
+                            client_socket, size=int_width * n_atoms
+                        )
                         if n_bytes != int_width * n_atoms:
                             if int_width == 4:
-                                b_contributing_atoms = b'\x01\x00\x00\x00' * n_atoms
+                                b_contributing_atoms = b"\x01\x00\x00\x00" * n_atoms
                             else:
-                                b_contributing_atoms = b'\x01\x00\x00\x00\x00\x00\x00\x00' * n_atoms
+                                b_contributing_atoms = (
+                                    b"\x01\x00\x00\x00\x00\x00\x00\x00" * n_atoms
+                                )
 
-                        contributing_atoms = np.frombuffer(b_contributing_atoms, dtype=int_type_py)
+                        contributing_atoms = np.frombuffer(
+                            b_contributing_atoms, dtype=int_type_py
+                        )
                         start_all_time = time.perf_counter()
 
                         # execute the model
-                        model_inputs = self.prepare_model_inputs(atomic_numbers, positions, contributing_atoms)
+                        model_inputs = self.prepare_model_inputs(
+                            atomic_numbers, positions, contributing_atoms
+                        )
                         model_outputs = self.execute_model(**model_inputs)
                         model_outputs = self.prepare_model_outputs(model_outputs)
 
@@ -96,18 +113,23 @@ class KIMServe(Server):
 
                         client_socket.sendall(model_outputs["energy"].tobytes())
                         client_socket.sendall(model_outputs["forces"].tobytes())
-                        logger.info(f"Evaluated Configuration. Time taken: {(end_time - start_all_time) * 1000}")
+                        logger.info(
+                            f"Evaluated Configuration. Time taken: {(end_time - start_all_time) * 1000}"
+                        )
                     except e:
                         logger.error(f"Error: {e}")
                         break
                 logger.info("Client closed the connection.")
         self.stop()
 
-    def prepare_model_inputs(self, atomic_numbers, positions, contributing_atoms, **kwargs):
+    def prepare_model_inputs(
+        self, atomic_numbers, positions, contributing_atoms, **kwargs
+    ):
         return {
-                "atomic_numbers":atomic_numbers, 
-                "positions":positions, 
-                "contributing_atoms":contributing_atoms}
+            "atomic_numbers": atomic_numbers,
+            "positions": positions,
+            "contributing_atoms": contributing_atoms,
+        }
 
     def prepare_model_outputs(self, kwargs):
         dict_out = {}
@@ -117,4 +139,3 @@ class KIMServe(Server):
 
     def execute_model(self, **kwargs):
         return self.exec_func(**kwargs)
-
