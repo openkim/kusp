@@ -1,0 +1,9 @@
+{"contributor-id" "729049db-685a-43b1-97a8-617daa2586ba"
+ "creator" "Amit Gupta"
+ "description" "Model driver for communicating to KUSP via sockets"
+ "domain" "openkim.org"
+ "extended-id" "KUSP_KIM__MD_000000000000_000"
+ "kim-api-version" "2.0"
+ "maintainer-id" "729049db-685a-43b1-97a8-617daa2586ba"
+ "publication-year" "2024"
+ "title" "KUSP based SOCKS driver v000"}

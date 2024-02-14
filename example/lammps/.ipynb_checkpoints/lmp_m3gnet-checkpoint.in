@@ -1,0 +1,26 @@
+# Initialize KIM Model
+kim init KIM_SOCKS__MO_000000000000_000 metal
+
+# Load data and define atom type
+read_data test_si.data
+kim interactions Si
+mass 1 28.0855
+
+dump myDump all atom 10 dump.lammpstrj
+
+neighbor 1.0 bin
+neigh_modify every 1 delay 0 check no
+
+# 64 -> 512 particles
+replicate 2 2 2
+
+# Create randome velocities and fix thermostat
+velocity all create 300.0 4928459 rot yes dist gaussian
+fix 1 all nvt temp 300.0 300.0 $(100.0*dt)
+
+
+timestep 0.001
+thermo 1
+run    10000
+
+
