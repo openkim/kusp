@@ -1,5 +1,6 @@
 KUSP: KIM Utility for Serving Potentials
 =========================================
+[![Documentation Status](https://readthedocs.org/projects/kusp/badge/?version=latest)](https://kusp.readthedocs.io/en/latest/?badge=latest)
 
 <img src="kusp.png" width="200px">
 
@@ -42,4 +43,21 @@ configuration information in following order,
     [Necessary] Next int_width x n_atoms bytes: atomic numbers
     [Necessary] Next 8 x 3 x n_atoms bytes: positions of atoms (x, y, z), double precision
     [Optional] Next int_width x n_atoms bytes: Which atoms to compute energy for (contributing atoms)
+```
+
+## Dependencies
+KUSP is a minimal dependency package, but it requires KIM API to serve potentials in simulator
+agnostic framework. Without KIM API user would need to implement own simulator interface.
+To install KIM API, just use the `conda` package manager,
+
+```bash
+conda install -c conda-forge kim-api=2.3
+```
+
+## Environment Variables
+To tell the KUSP KIM API client where to find the KUSP server, you need to set the
+environment variable `KUSP_SERVER_CONFIG` to the path of the configuration file. 
+
+```bash
+export KUSP_SERVER_CONFIG=/path/to/kusp_server_config.yaml
 ```

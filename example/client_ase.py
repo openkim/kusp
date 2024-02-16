@@ -3,7 +3,7 @@ from ase import Atoms, io
 from ase.calculators.kim import KIM
 
 # Initialize KIM Model
-model = KIM("KIM_SOCKS__MO_000000000000_000")
+model = KIM("KUSP__MO_000000000000_000")
 
 config = io.read("./Si_example/Si_alat5.909_scale0.0015_perturb1.xyz")
 

@@ -8,7 +8,7 @@ from matsciml.models import M3GNet
 from matsciml.models.base import ScalarRegressionTask
 from pymatgen.io.ase import AseAtomsAdaptor
 
-from KLIFFServe import KLIFFServe
+from kusp import KUSPServer
 
 #########################################################################
 #### Utils
@@ -68,13 +68,15 @@ def dgl_from_coords(conf: Atoms, cutoff=6.0):
 #########################################################################
 
 
-class MyServingServer(KLIFFServe):
-    def __init__(self, model, cutoff, elem_map, cell):
-        super().__init__(model)
-        self.cutoff = cutoff
-        self.elem_map = elem_map
+class M3GNetServer(KUSPServer):
+    def __init__(self, model, configuration):
+        super().__init__(model, configuration)
+        self.cutoff = self.global_information.get("cutoff", 6.0)
+        self.elem_map = self.global_information.get("elem_map", ["Si"])
         self.graph_in = None
-        self.cell = cell
+        self.cell = self.global_information.get("cell", np.array([[10.826 * 2, 0.0, 0.0], [0.0, 10.826 * 2, 0.0], [0.0, 0.0, 10.826 * 2]]))
+        if not isinstance(self.cell, np.ndarray):
+            self.cell = np.array(self.cell)
         self.n_atoms = -1
         self.config = None
 
@@ -110,10 +112,5 @@ if __name__ == "__main__":
     )
 
     model.load_state_dict(torch.load("m3gnet.pt"))
-    cutoff = 6.0
-    cell = np.array(
-        [[10.826 * 2, 0.0, 0.0], [0.0, 10.826 * 2, 0.0], [0.0, 0.0, 10.826 * 2]]
-    )
-    elem_map = ["Si"]
-    server = MyServingServer(model=model, cutoff=cutoff, elem_map=elem_map, cell=cell)
+    server = M3GNetServer(model=model, configuration="kusp_config.yaml")
     server.serve()

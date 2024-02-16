@@ -72,35 +72,43 @@ KUSPPortableModel::KUSPPortableModel(
         KIM::TimeUnit const requestedTimeUnit,
         int *const ier) {
     // check if env variable for config file is set
-    char *config_path = std::getenv("KLIFF_SERVE_CONFIG_PATH");
+    char *config_path = std::getenv("KUSP_SERVER_CONFIG");
     std::string config_path_str;
 
     if (config_path == nullptr) {
         // if not, use default config file
-        config_path_str = "./kliff_serve_config.dat";
+        config_path_str = "./kusp_config.yaml";
     } else {
         config_path_str = std::string(config_path);
     }
 
     std::cout << "Using config file: " << config_path_str << std::endl;
 
-    // read config file
-    // Requirements: 1st line: server ip, 2nd line: server port
-    // 3rd line: influence distance
-    // 4th line: list of elements symbols
-    std::ifstream config_file(config_path_str.c_str());
-    if (!config_file.is_open()) {
-        throw std::runtime_error("Error: config file not found.\n");
-    } else {
-        config_file >> server_ip;
-        config_file >> server_port;
-        config_file >> influence_distance;
-        std::string element;
-        while (config_file >> element) {
-            elements_list.push_back(element);
-        }
+//    // read config file
+//    // Requirements: 1st line: server ip, 2nd line: server port
+//    // 3rd line: influence distance
+//    // 4th line: list of elements symbols
+//    std::ifstream config_file(config_path_str.c_str());
+//    if (!config_file.is_open()) {
+//        throw std::runtime_error("Error: config file not found.\n");
+//    } else {
+//        config_file >> server_ip;
+//        config_file >> server_port;
+//        config_file >> influence_distance;
+//        std::string element;
+//        while (config_file >> element) {
+//            elements_list.push_back(element);
+//        }
+//    }
+//    config_file.close();
+
+    YAML::Node config = YAML::LoadFile(config_path_str);
+    server_ip = config["server"]["host"].as<std::string>();
+    server_port = config["server"]["port"].as<int>();
+    influence_distance = config["global"]["influence_distance"].as<double>();
+    for (auto const &element: config["global"]["elements"]) {
+        elements_list.push_back(element.as<std::string>());
     }
-    config_file.close();
 
     // init socket
     init_socket();

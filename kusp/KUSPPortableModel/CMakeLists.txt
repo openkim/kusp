@@ -20,8 +20,26 @@ endif()
 # print all files -----------------------------------------
 message("KIM PREFIX DIR: ${KIM_ROOT}")
 
-find_package(KIM-API-ITEMS 2.2 REQUIRED CONFIG)
+# YAML-CPP setup -----------------------------------------
+include(FetchContent)
 
+FetchContent_Declare(
+  yaml-cpp
+  GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+  GIT_TAG "0.8.0" # Can be a tag (yaml-cpp-x.x.x), a commit hash, or a branch name (master)
+)
+FetchContent_GetProperties(yaml-cpp)
+
+if(NOT yaml-cpp_POPULATED)
+  message(STATUS "Fetching yaml-cpp...")
+  FetchContent_Populate(yaml-cpp)
+  add_subdirectory(${yaml-cpp_SOURCE_DIR} ${yaml-cpp_BINARY_DIR})
+endif()
+
+target_link_libraries(${PROJECT_NAME} PRIVATE yaml-cpp::yaml-cpp) # The library or executable that
+
+
+find_package(KIM-API-ITEMS 2.2 REQUIRED CONFIG)
 # KIM-API setup --------------------------------------------------
 kim_api_items_setup_before_project(ITEM_TYPE "portableModel")
 project(KUSP__MO_000000000000_000 LANGUAGES CXX)

@@ -6,7 +6,8 @@ setup(
     packages=find_packages(),
     package_data={"kusp": ["KUSPPortableModel/*"]},
     install_requires=[
-        "yaml"
+        "pyyaml",
+        "loguru",
         # List your package's dependencies here, e.g.,
         # 'numpy',
         # 'requests',

@@ -93,9 +93,8 @@ class Server:
         """
         with open(file_path, "r") as file:
             config = yaml.safe_load(file)
-            server_config = config["server"]
 
-        server_block = server_config.get("server")
+        server_block = config.get("server")
         if not server_block:
             raise ValueError("Server block not found in the yaml file")
 

@@ -20,8 +20,6 @@ from loguru import logger
 
 from .server import Server
 
-BUFFER_SIZE = 1024
-
 
 def get_all_data(client_socket, size):
     all_data = b""
@@ -33,8 +31,9 @@ def get_all_data(client_socket, size):
     return all_data, len(all_data)
 
 
-class KIMServe(Server):
+class KUSPServer(Server):
     def __init__(self, exec_func: Callable[..., Any], configuration: Union[dict, str]):
+        super().__init__()
         if isinstance(configuration, dict):
             optional_args = configuration.get("optional", {})
             server_args = configuration.get("server", {})
