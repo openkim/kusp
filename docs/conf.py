@@ -38,4 +38,4 @@ html_theme_options = {
     "sidebar_hide_name": True,
 }
 html_title = "Serving arbitrary potentials to KIM API"
-html_logo = "_static/kusp_logo.png"
+html_logo = "_static/kusp.png"

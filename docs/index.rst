@@ -10,7 +10,8 @@ Welcome to KIM Serve's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-
+   introduction.md
+   example.md
 
 Indices and tables
 ==================
