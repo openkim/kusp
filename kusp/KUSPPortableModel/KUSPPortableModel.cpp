@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
+#include <yaml-cpp/yaml.h>
 // KLIFF_SERVE_CONFIG_PATH are set by the python script
 //==============================================================================
 //
@@ -30,7 +31,6 @@ int model_create(KIM::ModelCreate *const modelCreate,
     int ier;
     // read input files, convert units if needed, compute
     // interpolation coefficients, set cutoff, and publish parameters
-    std::cout << "Creating model" << std::endl;
     auto modelObject = new KUSPPortableModel(modelCreate,
                                               requestedLengthUnit,
                                               requestedEnergyUnit,
@@ -38,7 +38,6 @@ int model_create(KIM::ModelCreate *const modelCreate,
                                               requestedTemperatureUnit,
                                               requestedTimeUnit,
                                               &ier);
-    std::cout << "Model created" << std::endl;
     if (ier) {
         // constructor already reported the error
         delete modelObject;
@@ -82,29 +81,13 @@ KUSPPortableModel::KUSPPortableModel(
         config_path_str = std::string(config_path);
     }
 
-    std::cout << "Using config file: " << config_path_str << std::endl;
-
-//    // read config file
-//    // Requirements: 1st line: server ip, 2nd line: server port
-//    // 3rd line: influence distance
-//    // 4th line: list of elements symbols
-//    std::ifstream config_file(config_path_str.c_str());
-//    if (!config_file.is_open()) {
-//        throw std::runtime_error("Error: config file not found.\n");
-//    } else {
-//        config_file >> server_ip;
-//        config_file >> server_port;
-//        config_file >> influence_distance;
-//        std::string element;
-//        while (config_file >> element) {
-//            elements_list.push_back(element);
-//        }
-//    }
-//    config_file.close();
+    LOG_DEBUG("Using config file: " + config_path_str);
 
     YAML::Node config = YAML::LoadFile(config_path_str);
     server_ip = config["server"]["host"].as<std::string>();
     server_port = config["server"]["port"].as<int>();
+    LOG_DEBUG("Server IP: " + server_ip);
+    LOG_DEBUG("Server Port: " + std::to_string(server_port));
     influence_distance = config["global"]["influence_distance"].as<double>();
     for (auto const &element: config["global"]["elements"]) {
         elements_list.push_back(element.as<std::string>());
@@ -231,8 +214,6 @@ int KUSPPortableModel::Compute(
     }
 
     // send data to socket
-    std::cout << "Sending data to socket" << std::endl;
-    std::cout << "Number of particles: " << *numberOfParticlesPointer << std::endl;
     modelObject->data_to_socket(*numberOfParticlesPointer, speciesCode, coordinates, particleContributing);
 
     // get data from socket
@@ -304,10 +285,9 @@ void KUSPPortableModel::init_socket() {
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(server_port);
     inet_pton(AF_INET, server_ip.c_str(), &server_address.sin_addr);
-    std::cout << "Connecting to " << server_ip << ":" << server_port << std::endl;
     int connection_status = connect(connection_socket, (struct sockaddr *) &server_address, sizeof(server_address));
     if (connection_status == -1) {
-        throw std::runtime_error("Error: connection failed.\n");
+        throw std::runtime_error("Error: connection failed. Please check if the server is running.\n");
     }
 }
 

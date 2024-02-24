@@ -1,5 +1,5 @@
 # Initialize KIM Model
-kim init KIM_SOCKS__MO_000000000000_000 metal
+kim init KUSP__MO_000000000000_000 metal
 
 # Load data and define atom type
 read_data test_si.data

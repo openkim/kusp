@@ -21,23 +21,8 @@ endif()
 message("KIM PREFIX DIR: ${KIM_ROOT}")
 
 # YAML-CPP setup -----------------------------------------
-include(FetchContent)
-
-FetchContent_Declare(
-  yaml-cpp
-  GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-  GIT_TAG "0.8.0" # Can be a tag (yaml-cpp-x.x.x), a commit hash, or a branch name (master)
-)
-FetchContent_GetProperties(yaml-cpp)
-
-if(NOT yaml-cpp_POPULATED)
-  message(STATUS "Fetching yaml-cpp...")
-  FetchContent_Populate(yaml-cpp)
-  add_subdirectory(${yaml-cpp_SOURCE_DIR} ${yaml-cpp_BINARY_DIR})
-endif()
-
-target_link_libraries(${PROJECT_NAME} PRIVATE yaml-cpp::yaml-cpp) # The library or executable that
-
+add_subdirectory(yaml-cpp)
+include_directories(yaml-cpp/include)
 
 find_package(KIM-API-ITEMS 2.2 REQUIRED CONFIG)
 # KIM-API setup --------------------------------------------------
@@ -55,4 +40,5 @@ target_sources(${PROJECT_NAME} PRIVATE
         KUSPPortableModel.cpp
 )
 
+target_link_libraries(${PROJECT_NAME} PRIVATE yaml-cpp)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)

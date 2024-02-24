@@ -15,5 +15,6 @@ global:
 
   elements:
     - Si
+    - O
 
-  cutoff: 6.0
+  influence_distance: 6.0

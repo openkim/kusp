@@ -115,7 +115,7 @@ class KUSPServer(Server):
                         logger.info(
                             f"Evaluated Configuration. Time taken: {(end_time - start_all_time) * 1000}"
                         )
-                    except e:
+                    except Exception as e:
                         logger.error(f"Error: {e}")
                         break
                 logger.info("Client closed the connection.")

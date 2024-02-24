@@ -5,7 +5,7 @@ from ase.calculators.kim import KIM
 # Initialize KIM Model
 model = KIM("KUSP__MO_000000000000_000")
 
-config = io.read("./Si_example/Si_alat5.909_scale0.0015_perturb1.xyz")
+config = io.read("./Si.xyz")
 
 # Set it as calculator
 config.set_calculator(model)
