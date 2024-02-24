@@ -8,9 +8,6 @@ setup(
     install_requires=[
         "pyyaml",
         "loguru",
-        # List your package's dependencies here, e.g.,
-        # 'numpy',
-        # 'requests',
     ],
     author="Amit Gupta",
     author_email="gupta839@umn.edu",
