@@ -17,7 +17,7 @@ def get_if_model_installed():
     return False
 
 
-def install_kim_model(location="user"):
+def install_kim_model(collection="user"):
     """
     Install the KUSP model
     """
@@ -30,7 +30,7 @@ def install_kim_model(location="user"):
     os.chdir(kusp_base_path)
 
     subprocess.run(
-        ["kim-api-collections-management", "install", location, "KUSPPortableModel"],
+        ["kim-api-collections-management", "install", collection, "KUSPPortableModel"],
         check=True,
     )
     logger.info("KUSP model installed")
