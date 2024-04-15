@@ -1,98 +1,71 @@
-import dgl
+# Contributed example by: @melo-gonzo
+
+import sys
 import numpy as np
 import torch
-from ase import Atoms
+from kusp import KUSPServer
+from matsciml.datasets import S2EFDataset
+from matsciml.datasets.transforms import (
+    MGLDataTransform,
+    PeriodicPropertiesTransform,
+    PointCloudToGraphTransform,
+)
 from matsciml.datasets.utils import element_types
-from matsciml.lightning.data_utils import MatSciMLDataModule
 from matsciml.models import M3GNet
 from matsciml.models.base import ScalarRegressionTask
-from pymatgen.io.ase import AseAtomsAdaptor
-
-from kusp import KUSPServer
-
-#########################################################################
-#### Utils
-#########################################################################
 
 
-def raw_data_to_atoms(species, pos, contributing, cell, elem_map):
-    contributing = contributing.astype(int)
-    pos_contributing = pos[contributing == 1]
-    species = np.array(list(map(lambda x: elem_map[x], species)))
-    species = species[contributing == 1]
-    atoms = Atoms(species, positions=pos_contributing, cell=cell, pbc=[1, 1, 1])
-    return atoms
+### Set up sampling from a matsciml dataset
+### How can we use something like this to evaluate a lot of configurations?
 
 
-def dgl_from_coords(conf: Atoms, cutoff=6.0):
-    pymat_conf = AseAtomsAdaptor.get_structure(conf)
-    pos = torch.as_tensor(conf.get_positions())
-    pos.requires_grad_(True)
-    cell = conf.get_cell()[:]
-    cell = torch.as_tensor(cell)
-    from_edge, to_edge, offset, bond_lengths = pymat_conf.get_neighbor_list(
-        r=cutoff, exclude_self=True
-    )
-    offset = torch.as_tensor(offset)
-    bond_lengths = torch.as_tensor(bond_lengths)
-    offshift = offset @ cell
+class MatSciMLSampleGrabber:
+    def __init__(self):
+        self.sample_idx = 0
+        self.dset = S2EFDataset.from_devset(
+            transforms=[
+                PeriodicPropertiesTransform(cutoff_radius=6.5, adaptive_cutoff=True),
+                PointCloudToGraphTransform(backend="dgl"),
+                MGLDataTransform(),
+            ],
+        )
 
-    bond_vecs = pos[from_edge] - pos[to_edge]
-    shifted_bond_vecs = bond_vecs - offshift
-
-    graph = dgl.graph(np.array([from_edge, to_edge]).T.tolist())
-    cells = torch.ones((len(from_edge), 3, 3))
-    cells *= cell
-
-    g = {}
-
-    graph.ndata["node_type"] = torch.tensor(
-        list(map(lambda x: x - 1, pymat_conf.atomic_numbers))
-    )
-    graph.ndata["pos"] = pos
-    graph.edata["pbc_offset"] = offset
-    graph.edata["pbc_offshift"] = offshift
-    graph.edata["lattice"] = cells
-    graph.edata["bond_vec"] = shifted_bond_vecs
-    graph.edata["bond_dist"] = bond_lengths
-
-    g["graph"] = graph
-    g["atomic_numbers"] = pymat_conf.atomic_numbers
-    g["positions"] = pos
-
-    return g
+    def grab_sample(self):
+        # Load up a sample from matsciml dataset
+        sample = self.dset.__getitem__(self.sample_idx)
+        self.sample_idx += 1
+        print(self.sample_idx)
+        return sample
 
 
-#########################################################################
-#### Server
-#########################################################################
+sampler = MatSciMLSampleGrabber()
+
+
+# #########################################################################
+# #### Server
+# #########################################################################
 
 
 class M3GNetServer(KUSPServer):
     def __init__(self, model, configuration):
         super().__init__(model, configuration)
         self.cutoff = self.global_information.get("cutoff", 6.0)
-        self.elem_map = self.global_information.get("elem_map", ["Si"])
-        self.graph_in = None
-        self.cell = self.global_information.get("cell", np.array([[10.826 * 2, 0.0, 0.0], [0.0, 10.826 * 2, 0.0], [0.0, 0.0, 10.826 * 2]]))
-        if not isinstance(self.cell, np.ndarray):
-            self.cell = np.array(self.cell)
         self.n_atoms = -1
-        self.config = None
 
     def prepare_model_inputs(self, atomic_numbers, positions, contributing_atoms):
+        self.graph_in = sampler.grab_sample()
+        atomic_numbers = self.graph_in["graph"].ndata["atomic_numbers"]
         self.n_atoms = atomic_numbers.shape[0]
-        config = raw_data_to_atoms(
-            atomic_numbers, positions, contributing_atoms, self.cell, self.elem_map
-        )
-        self.graph_in = dgl_from_coords(config, cutoff=self.cutoff)
-        self.config = config
+        self.graph_in["graph"].ndata["node_type"] = torch.tensor(
+            list(map(lambda x: x - 1, atomic_numbers))
+        ).to(int)
+        self.graph_in["graph"].ndata["pos"].requires_grad_(True)
         return {"batch": self.graph_in}
 
     def prepare_model_outputs(self, energies):
         energy = energies["energy_total"]
         energy.backward()
-        forces_contributing = -1 * self.graph_in["positions"].grad
+        forces_contributing = -1 * self.graph_in["graph"].ndata["pos"].grad
         forces = np.zeros((self.n_atoms, 3))
         forces[: forces_contributing.shape[0], :] = (
             forces_contributing.double().detach().numpy()
@@ -106,11 +79,15 @@ if __name__ == "__main__":
         encoder_class=M3GNet,
         encoder_kwargs={
             "element_types": element_types(),
+            "return_all_layer_output": True,
         },
         output_kwargs={"lazy": False, "input_dim": 64, "hidden_dim": 64},
         task_keys=["energy_total"],
     )
 
-    model.load_state_dict(torch.load("m3gnet.pt"))
+    model.load_state_dict(
+        torch.load("m3gnet_2.pt", map_location=torch.device("cpu")), strict=False
+    )
+
     server = M3GNetServer(model=model, configuration="kusp_config.yaml")
     server.serve()

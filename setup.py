@@ -7,10 +7,10 @@ setup(
     packages=find_packages(),
     package_data={
         "kusp": [
-            "KUSPPortableModel/**/*",
-            "KUSPPortableModel/*",
-            "KUSPPortableModel/**/*.cpp",
-            "KUSPPortableModel/**/*.h",
+            "KUSP__MO_000000000000_000/**/*",
+            "KUSP__MO_000000000000_000/*",
+            "KUSP__MO_000000000000_000/**/*.cpp",
+            "KUSP__MO_000000000000_000/**/*.h",
         ]
     },
     include_package_data=True,

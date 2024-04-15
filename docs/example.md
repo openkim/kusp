@@ -39,3 +39,25 @@ lmp -in lmp_m3gnet.in
 Now inferring the model using KUSP is as simple as running the KIM Model.
 
 > Use `KUSP__MO_000000000000_000` in KIM models to run the model.
+
+## Running KIM Tests in KDP
+To run the kim tests, you currently need few extra steps after starting the server,
+1. Copy the `KUSP__MO_000000000000_000` folder in the `/home/openkim/models` directory.
+2. Edit the `/home/openkim/models/KUSP__MO_000000000000_000/kimspec.edn` file to include the species you want to test the model against,
+```clojure
+ ...
+ "maintainer-id" "729049db-685a-43b1-97a8-617daa2586ba"
+ "publication-year" "2024"
+ "species" ["Si" "Cu"]
+ ...
+```
+3. Install the desired tests,
+```bash
+kimitems -D install LatticeConstantCubicEnergy_fcc_Si__TE_828776015817_007
+```
+4. Run the tests using the pipeline tools,
+```bash
+pipeline-run-pair LatticeConstantCubicEnergy_fcc_Si__TE_828776015817_007 KUSP__MO_000000000000_000 -v
+```
+
+You should now see the tests running against the model.
