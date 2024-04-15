@@ -93,9 +93,6 @@ KUSPPortableModel::KUSPPortableModel(
         elements_list.push_back(element.as<std::string>());
     }
 
-    // init socket
-    init_socket();
-
     // register required pointers for model driver
     *ier = modelCreate->SetUnits(requestedLengthUnit,
                                        requestedEnergyUnit,
@@ -159,9 +156,7 @@ KUSPPortableModel::KUSPPortableModel(
 }
 
 // **************************************************************************
-KUSPPortableModel::~KUSPPortableModel() {
-    close_socket();
-}
+KUSPPortableModel::~KUSPPortableModel() {}
 
 //******************************************************************************
 // static member function
@@ -213,6 +208,9 @@ int KUSPPortableModel::Compute(
         return ier; //TODO: fix LOG_ERROR
     }
 
+    // connect to socket
+    modelObject->init_socket();
+
     // send data to socket
     modelObject->data_to_socket(*numberOfParticlesPointer, speciesCode, coordinates, particleContributing);
 
@@ -232,6 +230,9 @@ int KUSPPortableModel::Compute(
 
     // receive data from socket
     modelObject->data_from_socket(*numberOfParticlesPointer, energy, particleEnergy, forces);
+
+    // close socket
+    modelObject->close_socket();
     return false;
 }
 
