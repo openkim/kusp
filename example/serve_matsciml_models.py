@@ -1,9 +1,9 @@
 # Contributed example by: @melo-gonzo
 
 import sys
+
 import numpy as np
 import torch
-from kusp import KUSPServer
 from matsciml.datasets import S2EFDataset
 from matsciml.datasets.transforms import (
     MGLDataTransform,
@@ -14,6 +14,7 @@ from matsciml.datasets.utils import element_types
 from matsciml.models import M3GNet
 from matsciml.models.base import ScalarRegressionTask
 
+from kusp import KUSPServer
 
 ### Set up sampling from a matsciml dataset
 ### How can we use something like this to evaluate a lot of configurations?
