@@ -6,6 +6,10 @@
 #include <vector>
 #include <stdexcept>
 #include <cstdlib>
+#include <cstdio>
+#include <memory>
+#include <chrono>
+#include <fstream>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -182,6 +186,8 @@ int KUSPPortableModel::Compute(
         KIM::ModelCompute const *const modelCompute,
         KIM::ModelComputeArguments const *const modelComputeArguments) {
 
+    // auto start_time = std::chrono::high_resolution_clock::now();
+
     KUSPPortableModel *modelObject;
     modelCompute->GetModelBufferPointer(reinterpret_cast<void **>(&modelObject));
 
@@ -230,9 +236,18 @@ int KUSPPortableModel::Compute(
 
     // receive data from socket
     modelObject->data_from_socket(*numberOfParticlesPointer, energy, particleEnergy, forces);
-
     // close socket
     modelObject->close_socket();
+
+    // auto end_time = std::chrono::high_resolution_clock::now();
+
+    // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+
+    // auto f = std::ofstream("kusp_compute_time.txt", std::ios::app);
+    // time in milliseconds as float
+    // f << static_cast<float>(duration.count())/1000.0 << std::endl;
+    // f.close();
+
     return false;
 }
 
@@ -281,6 +296,10 @@ void KUSPPortableModel::init_socket() {
     if (connection_socket == -1) {
         throw std::runtime_error("Error: socket creation failed.\n");
     }
+    // set buffer size to 8MB
+    // int buffer_size = 8 * 1024 * 1024;
+    // setsockopt(connection_socket, SOL_SOCKET, SO_SNDBUF, &buffer_size, sizeof(buffer_size));
+    // setsockopt(connection_socket, SOL_SOCKET, SO_RCVBUF, &buffer_size, sizeof(buffer_size));
     struct sockaddr_in server_address;
     memset(&server_address, 0, sizeof(server_address));
     server_address.sin_family = AF_INET;
@@ -296,18 +315,54 @@ void KUSPPortableModel::close_socket() {
     close(connection_socket);
 }
 
+
 void KUSPPortableModel::data_to_socket(int n_atoms, int* species, double *coordinates, int *particleContributing) {
     int32_t size_of_int = sizeof(int);
     send(connection_socket, &size_of_int, sizeof(int32_t), 0);
     send(connection_socket, &n_atoms, sizeof(int), 0);
-    send(connection_socket, species, n_atoms * sizeof(int), 0);
-    send(connection_socket, coordinates, n_atoms * 3 * sizeof(double), 0);
-    send(connection_socket, particleContributing, n_atoms * sizeof(int), 0);
+
+    int outgoing_size = n_atoms * (sizeof(int) * 2 + 3 * sizeof(double));
+    std::unique_ptr<char[]> buffer(new char[outgoing_size]);
+    std::memcpy(buffer.get(), species, n_atoms * sizeof(int));
+    std::memcpy(buffer.get() + n_atoms * sizeof(int), coordinates, n_atoms * 3 * sizeof(double));
+    std::memcpy(buffer.get() + n_atoms * sizeof(int) + n_atoms * 3 * sizeof(double), particleContributing, n_atoms * sizeof(int));
+
+    int bytes_sent = 0;
+    while (bytes_sent < outgoing_size) {
+        int bytes = send(connection_socket, buffer.get() + bytes_sent, outgoing_size - bytes_sent, 0);
+        if (bytes == -1) {
+            throw std::runtime_error("Error: send failed.\n");
+        }
+        bytes_sent += bytes;
+    }
 }
 
 void  KUSPPortableModel::data_from_socket(int n_atoms, double* energy, double *particleEnergy, double *forces) {
-    recv(connection_socket, energy, sizeof(double), 0);
-    recv(connection_socket, forces, n_atoms * 3 * sizeof(double), 0);
+    // recv(connection_socket, energy, sizeof(double), 0);
+    // recv(connection_socket, forces, n_atoms * 3 * sizeof(double), 0);
+    int incoming_size = n_atoms * 3 * sizeof(double) + sizeof(double);
+    std::unique_ptr<char[]> buffer(new char[incoming_size]);
+
+    int bytes_received = 0;
+    while (bytes_received < incoming_size) {
+        int bytes = recv(connection_socket, buffer.get() + bytes_received, incoming_size - bytes_received, 0);
+        if (bytes == -1) {
+            throw std::runtime_error("Error: recv failed.\n");
+        }
+        bytes_received += bytes;
+    }
+
+    // copy data from buffer to respective arrays
+    memcpy(energy, buffer.get(), sizeof(double));
+    memcpy(forces, buffer.get() + sizeof(double), n_atoms * 3 * sizeof(double));
+
+    // print data
+    // std::cout << "Energy: " << *energy << std::endl;
+    // std::cout << "Forces: \n";
+    // for (int i = 0 ; i < n_atoms; i++) {
+    //     // print upto 15 decimal places
+    //     std::printf("%1.15f %1.15f %1.15f\n", forces[i * 3], forces[i * 3 + 1], forces[i * 3 + 2]);
+    // }
     // optional particleEnergy
     // if (particleEnergy) {
     //     recv(connection_socket, particleEnergy, n_atoms * sizeof(int), 0);

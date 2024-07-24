@@ -64,6 +64,7 @@ class Server:
         self.buffer_size = buffer_size
         self.server_socket = None
         self.configuration = {}
+        logger.add("kusp.log", level="INFO", colorize=False)
 
     def start(self):
         """

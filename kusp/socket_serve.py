@@ -23,12 +23,18 @@ from .server import Server
 
 def get_all_data(client_socket, size):
     all_data = b""
-    # while True:
-    data = client_socket.recv(size)
-    # if not data or len(data) < BUFFER_SIZE:
-    #    break
-    all_data += data
+    recv_size = 0
+    while recv_size < size:
+        data = client_socket.recv(size)
+        all_data += data
+        recv_size += len(data)
     return all_data, len(all_data)
+
+def send_all_data(client_socket, data, size):
+    sent_size = 0
+    while sent_size < size:
+        sent_size += client_socket.send(data[sent_size:])
+    return sent_size
 
 
 class KUSPServer(Server):
@@ -68,36 +74,36 @@ class KUSPServer(Server):
                         # Next int_width bytes: number of atoms (n_atoms), default int_width integer
                         n_atoms = struct.unpack(f"i", client_socket.recv(int_width))[0]
 
+                        total_config_size = n_atoms * (int_width + 8 * 3 + int_width)
+                        raw_data, n_bytes = get_all_data(client_socket, size=total_config_size)
+                        if n_bytes != total_config_size:
+                            raise ValueError("Data size mismatch")
+                        
                         # Next int_width x n_atoms bytes: atomic numbers
-                        b_atomic_numbers, n_bytes = get_all_data(
-                            client_socket, size=int_width * n_atoms
-                        )
                         atomic_numbers = np.frombuffer(
-                            b_atomic_numbers, dtype=int_type_py
+                            raw_data[:int_width * n_atoms], dtype=int_type_py
                         )
 
                         # Next 8 x 3 x n_atoms bytes: positions of atoms (x, y, z), double precision
-                        b_positions, n_bytes = get_all_data(
-                            client_socket, size=8 * 3 * n_atoms
-                        )
                         positions = np.frombuffer(
-                            b_positions, dtype=np.float64
+                            raw_data[int_width * n_atoms: int_width * n_atoms + 8 * 3 * n_atoms],
+                            dtype=np.float64,
                         ).reshape((n_atoms, 3))
 
                         # Next int_width x n_atoms bytes: Which atoms to compute energy for (contributing atoms)
-                        b_contributing_atoms, n_bytes = get_all_data(
-                            client_socket, size=int_width * n_atoms
-                        )
-                        if n_bytes != int_width * n_atoms:
-                            if int_width == 4:
-                                b_contributing_atoms = b"\x01\x00\x00\x00" * n_atoms
-                            else:
-                                b_contributing_atoms = (
-                                    b"\x01\x00\x00\x00\x00\x00\x00\x00" * n_atoms
-                                )
+                        # b_contributing_atoms, n_bytes = get_all_data(
+                        #     client_socket, size=int_width * n_atoms
+                        # )
+                        # if n_bytes != int_width * n_atoms:
+                        #     if int_width == 4:
+                        #         b_contributing_atoms = b"\x01\x00\x00\x00" * n_atoms
+                        #     else:
+                        #         b_contributing_atoms = (
+                        #             b"\x01\x00\x00\x00\x00\x00\x00\x00" * n_atoms
+                        #         )
 
                         contributing_atoms = np.frombuffer(
-                            b_contributing_atoms, dtype=int_type_py
+                           raw_data[int_width * n_atoms + 8 * 3 * n_atoms:], dtype=int_type_py
                         )
                         start_all_time = time.perf_counter()
 
@@ -109,9 +115,8 @@ class KUSPServer(Server):
                         model_outputs = self.prepare_model_outputs(model_outputs)
 
                         end_time = time.perf_counter()
-
-                        client_socket.sendall(model_outputs["energy"].tobytes())
-                        client_socket.sendall(model_outputs["forces"].tobytes())
+                        send_all_data(client_socket, model_outputs["energy"].tobytes(), 8)
+                        send_all_data(client_socket, model_outputs["forces"].tobytes(), 8 * 3 * n_atoms)
                         logger.info(
                             f"Evaluated Configuration. Time taken: {(end_time - start_all_time) * 1000}"
                         )
