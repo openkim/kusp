@@ -64,3 +64,14 @@ environment variable `KUSP_SERVER_CONFIG` to the path of the configuration file.
 ```bash
 export KUSP_SERVER_CONFIG=/path/to/kusp_server_config.yaml
 ```
+
+## Citation
+If you use KUSP in your research, or find it useful, please cite the following paper, [accessible here](https://openreview.net/forum?id=lQAnpCF7nq).
+
+```bibtex
+@inproceedings{gupta2024kusp,
+  title={KUSP: Python server for deploying ML interatomic potentials},
+  author={Gupta, Amit and Tadmor, Ellad B and Martiniani, Stefano},
+  booktitle={AI for Accelerated Materials Design-Vienna 2024}
+}
+```

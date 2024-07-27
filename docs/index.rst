@@ -12,6 +12,7 @@ Welcome to KIM Serve's documentation!
 
    introduction.md
    example.md
+   nequip_example.md
 
 Indices and tables
 ==================

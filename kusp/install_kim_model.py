@@ -4,7 +4,7 @@ import subprocess
 from loguru import logger
 
 
-def get_if_model_installed():
+def check_if_model_installed():
     """
     Check if the model is installed
     """
@@ -17,11 +17,16 @@ def get_if_model_installed():
     return False
 
 
-def install_kim_model(collection="user"):
+def install_kim_model(collection:str = "user", installer: str = "kim-api-collections-management"):
     """
-    Install the KUSP model
+    Install the KUSP model.
+
+    Args:
+        collection (str): The collection to install the model to. Default is "user".
+        installer (str): The installation mode. Default is "kim-api-collections-management",
+            another option is "kimitems", for installing the model in KDP for testing.
     """
-    if get_if_model_installed():
+    if check_if_model_installed():
         logger.info("KUSP model already installed")
         return True
 
@@ -29,14 +34,27 @@ def install_kim_model(collection="user"):
     kusp_base_path = os.path.dirname(os.path.realpath(__file__))
     os.chdir(kusp_base_path)
 
-    subprocess.run(
-        [
-            "kim-api-collections-management",
-            "install",
-            collection,
-            "KUSP__MO_000000000000_000",
-        ],
-        check=True,
-    )
+    if installer == "kim-api-collections-management":
+        subprocess.run(
+            [
+                "kim-api-collections-management",
+                "install",
+                collection,
+                "KUSP__MO_000000000000_000",
+            ],
+            check=True,
+        )
+    elif installer == "kimitems":
+        subprocess.run(
+            [
+                "kimitems",
+                "install",
+                "KUSP__MO_000000000000_000",
+            ],
+            check=True,
+        )
+    else:
+        raise ValueError(f"Installer {installer} not recognized")
+    
     logger.info("KUSP model installed")
     return True
