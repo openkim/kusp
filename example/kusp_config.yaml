@@ -1,20 +1,16 @@
-server:
+transport:
+  name: tcp
+  options:
     host: 127.0.0.1
     port: 12345
-    optional:
-      mode: IP
-      max_connections: 1 # Maximum number of connections to the server
-                         # only 1 connection is allowed for now
-      buffer_size: 1024 # Buffer size for the server
+    max_connections: 1
 
 global:
   cell:
-    - [99999., 0, 0]
-    - [0, 99999., 0]
-    - [0, 0, 99999.]
-
+    - [99999.0, 0, 0]
+    - [0, 99999.0, 0]
+    - [0, 0, 99999.0]
   elements:
     - Si
     - O
-
   influence_distance: 6.0

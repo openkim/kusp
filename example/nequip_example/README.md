@@ -27,7 +27,7 @@ python NequIPServer.py /path/to/model.pt /path/to/config.yml
 ## Imports and Dependencies
 
 ```python
-from kusp import KUSPServer
+from kusp import KUSP
 import numpy as np
 import torch
 import ase

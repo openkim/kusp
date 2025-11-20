@@ -8,6 +8,12 @@ if(POLICY CMP0091)
   cmake_policy(SET CMP0091 NEW)
 endif()
 
+# Added by Amit Gupte on 30/10/2025 as some CMake installations yield errors.
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+# --------------------------------------------------------------------------
+
 project(YAML_CPP VERSION 0.8.0 LANGUAGES CXX)
 
 set(YAML_CPP_MAIN_PROJECT OFF)

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10..3.18)
+cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_CXX_STANDARD 17)
 cmake_policy(SET CMP0074 NEW)
@@ -8,23 +8,9 @@ if(flg)
 endif()
 message("Build Type: ${CMAKE_BUILD_TYPE}")
 
-# KIM-API CMAKE FILES-------------------------
-if (NOT DEFINED KIM_ROOT)
-    if (DEFINED ENV{KIM_API_CMAKE_PREFIX_DIR})
-        set(KIM_ROOT $ENV{KIM_API_CMAKE_PREFIX_DIR})
-    else()
-        set(KIM_ROOT "/usr/local")
-    endif()
-endif()
-
-# print all files -----------------------------------------
-message("KIM PREFIX DIR: ${KIM_ROOT}")
-
-# YAML-CPP setup -----------------------------------------
-add_subdirectory(yaml-cpp)
-include_directories(yaml-cpp/include)
-
+#list(APPEND CMAKE_PREFIX_PATH $ENV{KIM_API_CMAKE_PREFIX_DIR})
 find_package(KIM-API-ITEMS 2.2 REQUIRED CONFIG)
+
 # KIM-API setup --------------------------------------------------
 kim_api_items_setup_before_project(ITEM_TYPE "portableModel")
 project(KUSP__MO_000000000000_000 LANGUAGES CXX)
@@ -35,6 +21,10 @@ add_kim_api_model_library(
   CREATE_ROUTINE_NAME     "model_create"
   CREATE_ROUTINE_LANGUAGE "cpp"
 )
+
+# YAML-CPP setup -----------------------------------------
+add_subdirectory(yaml-cpp)
+include_directories(yaml-cpp/include)
 
 target_sources(${PROJECT_NAME} PRIVATE
         KUSPPortableModel.cpp

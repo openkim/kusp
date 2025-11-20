@@ -14,7 +14,7 @@ from matsciml.datasets.utils import element_types
 from matsciml.models import M3GNet
 from matsciml.models.base import ScalarRegressionTask
 
-from kusp import KUSPServer
+from kusp import KUSP
 
 ### Set up sampling from a matsciml dataset
 ### How can we use something like this to evaluate a lot of configurations?
@@ -47,7 +47,7 @@ sampler = MatSciMLSampleGrabber()
 # #########################################################################
 
 
-class M3GNetServer(KUSPServer):
+class M3GNet(KUSP):
     def __init__(self, model, configuration):
         super().__init__(model, configuration)
         self.cutoff = self.global_information.get("cutoff", 6.0)
@@ -90,5 +90,5 @@ if __name__ == "__main__":
         torch.load("m3gnet_2.pt", map_location=torch.device("cpu")), strict=False
     )
 
-    server = M3GNetServer(model=model, configuration="kusp_config.yaml")
+    server = M3GNet(model=model, configuration="kusp_config.yaml")
     server.serve()

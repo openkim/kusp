@@ -1,8 +1,7 @@
-#ifndef SOCKS_MODEL_DRIVER_HPP
-#define SOCKS_MODEL_DRIVER_HPP
+#ifndef KUSP_MODEL_
+#define KUSP_MODEL_
 
 #include "KIM_ModelHeaders.hpp"
-#include "KIM_LogMacros.hpp"
 #include <string>
 #include <vector>
 
@@ -57,11 +56,14 @@ private:
 
     int server_port = 12345;
     std::string server_ip = "127.0.0.1";
-    int connection_socket;
-    void init_socket();
-    void close_socket();
-    void data_to_socket(int n_atoms, int* species, double *coordinates, int *particleContributing);
-    void data_from_socket(int n_atoms, double* energy, double *particleEnergy, double *forces);
+    int connection_socket{};
+    int timeout_send_ms = 15000;
+    int timeout_recv_ms = 15000;
+    int init_socket(KIM::ModelCompute const *modelCompute);
+    void close_socket() const;
+    int data_to_socket(KIM::ModelCompute const *modelCompute, int n_atoms, const int * species, const double *coordinates,
+                        const int *particleContributing) const;
+    int data_from_socket(KIM::ModelCompute const *modelCompute, int n_atoms, double* energy, double *particleEnergy, double *forces) const;
 };
 
 #endif
