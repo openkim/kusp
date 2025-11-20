@@ -1,22 +1,23 @@
 import os
-import shutil
 import sys
-import hashlib
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import click
 import yaml
 from loguru import logger
 
 from kusp.io import IPProtocol
-from .install_kim_model import install_kim_model, install_kim_driver, remove_kim_model, remove_kim_driver
+from .kim import (
+    install_kim_driver,
+    install_kim_model,
+    package_model_for_deployment,
+    remove_kim_driver,
+    remove_kim_model,
+)
 from .utils import (
     resolve_config_path,
     write_or_update_config,
-    generate_ast_env_yaml,
-    generate_pip_requirements,
-    generate_conda_env_yaml,
 )
 
 
@@ -231,81 +232,26 @@ def cmd_deploy(
     name: Optional[str],
     env_mode: str,
 ):
-    # TODO: generate kimspec.edn
     click.echo(f"Preparing deployment package for {model_file}")
-
     if resources:
         res_str = " ".join(str(f) for f in resources)
         click.echo(f"Including resources: {res_str}")
 
-    if name is None:
-        name = f"KUSP_{model_file.stem}__MO_111111111111_000"
-
-    click.echo(f"Deploying {model_file} as {name}")
-
-    target_dir = Path(name)
-    target_dir.mkdir(exist_ok=False)
-
-    # Copy main model file as `<name>.py` into the package directory
-    model_file_hash = hashlib.blake2b(
-        open(model_file, "rb").read(), digest_size=8
-    ).hexdigest()
-    model_target = target_dir / f"@kusp_model_{model_file_hash}_{name}.py"
-    # file name === @kusp_model_0793b0070a3c99ab_KUSP_lj__MO_111111111111_000.py
-    # @kusp_model as a handle for driver, hash for python file integrity verification (TODO)
-    shutil.copy2(str(model_file), str(model_target))
-
     env_mode = env_mode.lower()
     click.echo(f"Generating environment description using mode: {env_mode!r}")
 
-    files_to_write: List[str] = [model_target.name]
+    package = package_model_for_deployment(
+        model_file=model_file,
+        resources=resources,
+        name=name,
+        env_mode=env_mode,
+    )
 
-    if env_mode == "ast":
-        env_text = generate_ast_env_yaml(model_target, env_name=name)
-        env_file = target_dir / "kusp_env.ast.env"
-        env_file.write_text(env_text)
-        files_to_write.append("kusp_env.ast.env")
-    elif env_mode == "pip":
-        env_text = generate_pip_requirements()
-        env_file = target_dir / "kusp_env.pip.txt"
-        env_file.write_text(env_text)
-        files_to_write.append("kusp_env.pip.txt")
-    elif env_mode == "conda":
-        env_text = generate_conda_env_yaml(env_name=name)
-        env_file = target_dir / "kusp_env.conda.yml"
-        env_file.write_text(env_text)
-        files_to_write.append("kusp_env.conda.yml")
-    else:
-        raise NotImplementedError("Requested env resolver not supported.")
-
-    # Copy resources and build CMake parameter list
-    for f in resources:
-        shutil.copy2(str(f), str(target_dir))
-        files_to_write.append(Path(f).name)
-
-    files_to_write_str = " ".join(f'"{fname}"' for fname in files_to_write)
-
-    click.echo(f"Wrote environment description: {env_file.name}")
-
-    cmake_template = f"""
-cmake_minimum_required(VERSION 3.10)
-
-list(APPEND CMAKE_PREFIX_PATH $ENV{{KIM_API_CMAKE_PREFIX_DIR}})
-find_package(KIM-API-ITEMS 2.2 REQUIRED CONFIG)
-
-kim_api_items_setup_before_project(ITEM_TYPE "portableModel")
-project({name} LANGUAGES CXX)
-kim_api_items_setup_after_project(ITEM_TYPE "portableModel")
-
-add_kim_api_model_library(
-  NAME                    "${{PROJECT_NAME}}"
-  DRIVER_NAME             "KUSP__MD_000000000000_000"
-  PARAMETER_FILES         {files_to_write_str}
-)
-"""
-    (target_dir / "CMakeLists.txt").write_text(cmake_template)
-
-    click.echo(f"Model {name} written in directory: {target_dir}")
+    click.echo(f"Deploying {model_file} as {package.model_name}")
+    click.echo(f"Wrote environment description: {package.env_file.name}")
+    click.echo(
+        f"Model {package.model_name} written in directory: {package.target_dir}"
+    )
 
 
 def main(argv: Optional[list[str]] = None) -> int:

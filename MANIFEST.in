@@ -1,2 +1,3 @@
 recursive-include kusp/KUSP__MO_000000000000_000 *.*
+recursive-include kusp/KUSP__MD_000000000000_000 *.*
 include .pypi_readme.md

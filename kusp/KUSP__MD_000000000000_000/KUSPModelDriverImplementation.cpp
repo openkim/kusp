@@ -5,8 +5,6 @@
 #include "KIM_LogMacros.hpp"
 #include "KUSPModelDriver.hpp"
 
-#include <Python.h>
-
 //******************************************************************************
 #undef KIM_LOGGER_OBJECT_NAME
 #define KIM_LOGGER_OBJECT_NAME modelDriverCreate
@@ -33,7 +31,7 @@ KUSPModelDriverImplementation::KUSPModelDriverImplementation(KIM::ModelDriverCre
     for (int i = 0; i < num_param_files; i++) {
         const std::string *file_name = nullptr;
         modelDriverCreate->GetParameterFileBasename(i, &file_name);
-        if (file_name->compare(0, 11, "@kusp_model")==0) {
+        if (file_name->compare(0, 11, "@kusp_model") == 0) {
             model_file = *file_name; // it is the only file that needs reading
         } else {
             param_files.push_back(*file_name);
@@ -43,10 +41,7 @@ KUSPModelDriverImplementation::KUSPModelDriverImplementation(KIM::ModelDriverCre
     const std::filesystem::path fully_qualified_model_file = std::filesystem::path(*param_dir_name_ptr) / model_file;
 
     LOG_DEBUG("Reading Python files: " + fully_qualified_model_file.string());
-    std::cout << "Here\n";
-    std::cout << Py_IsInitialized() << std::endl;
     model_ = std::make_unique<KUSPModel>(fully_qualified_model_file.string());
-    std::cout << "Initialized\n";
     influence_distance = model_->influence_distance;
     cutoff_distance = model_->influence_distance; // as of now no support for different cutoffs, may be in future
     modelWillNotRequestNeighborsOfNoncontributingParticles_ = true; // no support for that either

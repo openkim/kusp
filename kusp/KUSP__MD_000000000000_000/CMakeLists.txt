@@ -1,18 +1,11 @@
 cmake_minimum_required(VERSION 3.10)
 
-set(CMAKE_CXX_STANDARD 17)
 cmake_policy(SET CMP0074 NEW)
 STRING(COMPARE EQUAL "${CMAKE_BUILD_TYPE}" "" flg)
-if(flg)
+if (flg)
     set(CMAKE_BUILD_TYPE Debug)
-endif()
+endif ()
 message("Build Type: ${CMAKE_BUILD_TYPE}")
-find_package(Python3 COMPONENTS Development REQUIRED)
-
-message(STATUS "Python3_EXECUTABLE = ${Python3_EXECUTABLE}")
-message(STATUS "Python3_LIBRARY    = ${Python3_LIBRARY}")
-message(STATUS "Python3_INCLUDE_DIR= ${Python3_INCLUDE_DIR}")
-
 
 # TODO: Log this error and behaviour
 #-- Found KIM-API: /opt/kim_api/install/lib/libkim-api.so.2.4.1
@@ -28,42 +21,67 @@ message(STATUS "Python3_INCLUDE_DIR= ${Python3_INCLUDE_DIR}")
 #-- Configuring incomplete, errors occurred!
 #See also "/home/amit/Projects/FERMAT/KLIFF_Serve/kliff_serve/kusp/KUSP__MD_000000000000_000/tmp2/CMakeFiles/CMakeOutput.log".
 
+# TODO: log the python already interpreter error too
 
-# YAML-CPP setup -----------------------------------------
-add_subdirectory(ext/yaml-cpp)
-include_directories(ext/yaml-cpp/include)
-
-add_subdirectory(ext/pybind11)
-include_directories(ext/pybind11/include)
+# KIM-API setup --------------------------------------------------
 list(APPEND CMAKE_PREFIX_PATH $ENV{KIM_API_CMAKE_PREFIX_DIR})
 find_package(KIM-API-ITEMS 2.2 REQUIRED CONFIG)
-# KIM-API setup --------------------------------------------------
 kim_api_items_setup_before_project(ITEM_TYPE "modelDriver")
 project(KUSP__MD_000000000000_000 LANGUAGES CXX)
 kim_api_items_setup_after_project(ITEM_TYPE "modelDriver")
 
+
+set(CMAKE_CXX_STANDARD 17) # KIM API sets the std to 98, so set to C++17 afterwards
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Python setup ------------------------------------------
+find_package(Python3 COMPONENTS Development Interpreter REQUIRED)
+
+# Debug messages to ensure correct python is detected
+message(STATUS "Python3_EXECUTABLE = ${Python3_EXECUTABLE}")
+message(STATUS "Python3_LIBRARY =${Python3_LIBRARY}")
+message(STATUS "Python3_INCLUDE_DIRS=${Python3_INCLUDE_DIR}")
+
+add_subdirectory(ext/pybind11)
+include_directories(ext/pybind11/include)
+
+
+## YAML-CPP setup -----------------------------------------
+#add_subdirectory(ext/yaml-cpp)
+#include_directories(ext/yaml-cpp/include)
+#
+
 add_kim_api_model_driver_library(
-  NAME                    ${PROJECT_NAME}
-  CREATE_ROUTINE_NAME     "model_driver_create"
-  CREATE_ROUTINE_LANGUAGE "cpp"
+        NAME ${PROJECT_NAME}
+        CREATE_ROUTINE_NAME "model_driver_create"
+        CREATE_ROUTINE_LANGUAGE "cpp"
 )
 
 target_sources(${PROJECT_NAME} PRIVATE
         KUSPModelDriverImplementation.cpp
         KUSPModelDriver.cpp
         KUSPModel.cpp
+        python_utils.cpp
 )
 
+# simple executable to test
+# TODO: remove it for release
 add_executable(test_kusp
-    main.cpp
-    KUSPModel.cpp
+        main.cpp
+        KUSPModel.cpp
+        python_utils.cpp
 )
 
 target_include_directories(test_kusp PUBLIC .)
 
 target_link_libraries(test_kusp PRIVATE pybind11::embed)
+target_link_libraries(test_kusp PRIVATE ${Python3_LIBRARY})
 target_link_libraries(${PROJECT_NAME} PRIVATE pybind11::embed)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${Python3_LIBRARY})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE yaml-cpp)
+#target_link_libraries(${PROJECT_NAME} PRIVATE yaml-cpp)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 set_property(TARGET test_kusp PROPERTY CXX_STANDARD 17)
+
+#set_target_properties(yaml-cpp PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES)

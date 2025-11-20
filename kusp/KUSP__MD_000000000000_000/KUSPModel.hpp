@@ -6,7 +6,6 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include <Python.h>
 
 enum class KUSPEnvType {
     AST,
@@ -28,7 +27,7 @@ public:
     KUSPModel() = delete;
     KUSPModel(const KUSPModel &) = delete;
     KUSPModel &operator=(const KUSPModel &) = delete;
-    KUSPModel(KUSPModel &&) = delete; //remove for now. might be useful to make KUSPModel movable. TODO
+    KUSPModel(KUSPModel &&) = delete; // remove for now. might be useful to make KUSPModel movable. TODO
     KUSPModel &operator=(KUSPModel &&) = delete;
 
     void Run(const std::vector<int> &species,
@@ -40,10 +39,10 @@ public:
 
     double influence_distance;
     std::vector<std::string> species;
+
 private:
-    struct Model; // for hidden variable warning
+    struct Model; // for hidden variable warning, not strictly needed
     std::unique_ptr<Model> model_;
-    static void init_python_once();
 };
 
 
@@ -94,15 +93,3 @@ inline void print_kusp_env_help(const std::string &model_dir, const std::string 
         os.flush();
     }
 }
-
-struct GilGuard {
-    PyGILState_STATE state;
-    GilGuard() {
-        std::cout << "acquiring GIL\n";
-        state = PyGILState_Ensure();
-    }   // attach thread, acquire GIL
-    ~GilGuard() {
-        std::cout << "Releasing GIL\n";
-        PyGILState_Release(state);
-    }     // release GIL
-};

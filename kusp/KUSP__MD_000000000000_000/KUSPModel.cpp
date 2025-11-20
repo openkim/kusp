@@ -1,15 +1,13 @@
 #include "KUSPModel.hpp"
+#include "python_utils.hpp"
 
 #include <filesystem>
 #include <iostream>
-#include <mutex>
 #include <stdexcept>
 #include <utility>
 
 #include <pybind11/embed.h>
 #include <pybind11/numpy.h>
-
-#include <Python.h>
 
 namespace py = pybind11;
 
@@ -25,11 +23,7 @@ KUSPModel::KUSPModel(const std::string &python_script_path) {
     const std::string model_dir = script_path.parent_path().string();
 
     try {
-        std::cout << "before init" << std::endl;
-        init_python_once();
-        std::cout << "after init" << std::endl;
-        // py::gil_scoped_acquire gil;
-        GilGuard lock;
+        auto gil = python_utils::acquire_gil();
 
         const py::module_ kusp_utils = py::module_::import("kusp.utils");
         const py::object loader = kusp_utils.attr("load_kusp_callable");
@@ -85,7 +79,7 @@ KUSPModel::KUSPModel(const std::string &python_script_path) {
 void KUSPModel::Run(const std::vector<int> &species_, const std::vector<double> &positions_flat,
                     const std::vector<int> &contributing, double &energy_out, std::vector<double> &forces_out) const {
     // py::gil_scoped_acquire gil;
-    GilGuard lock;
+    auto gil = python_utils::acquire_gil();
 
     const std::size_t n_atoms = species_.size();
     if (positions_flat.size() != n_atoms * 3) {
@@ -135,8 +129,7 @@ void KUSPModel::Run(const std::vector<int> &species_, const std::vector<double> 
 void KUSPModel::Run(const int n_atoms, const int *const species_, const double *const positions,
                     const int *const contributing, double *const energy_out, double *const forces_out) const {
     // py::gil_scoped_acquire gil;
-    GilGuard lock;
-    std::cout <<"Acquired GIL again\n" << std::endl;
+    auto gil = python_utils::acquire_gil();
 
     // Prepare numpy inputs
     py::array_t<int> species_np(n_atoms, species_);
@@ -180,21 +173,6 @@ void KUSPModel::Run(const int n_atoms, const int *const species_, const double *
 }
 
 
-void KUSPModel::init_python_once() {
-    static std::once_flag once;
-    std::call_once(once, []() {
-        std::cout << "initializinf intrepeter\n";
-        if (!Py_IsInitialized()) {
-            // py::initialize_interpreter();
-            Py_Initialize();
-            std::cout << "initialized" << std::endl;
-        }
-        else
-            std::cout << "Already interpreter init\n";
-    });
-}
-
-
 std::optional<std::pair<KUSPEnvType, std::string>> detect_kusp_env_type(const std::string &model_dir) {
     namespace fs = std::filesystem;
 
@@ -216,6 +194,4 @@ std::optional<std::pair<KUSPEnvType, std::string>> detect_kusp_env_type(const st
     return std::nullopt;
 }
 
-KUSPModel::~KUSPModel() {
-    std::cout << "MODEL DESTROYED" << std::endl;
-}
+KUSPModel::~KUSPModel() = default;

@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ipcamit/kusp"
+Homepage = "https://github.com/openkim/kusp"
 
 [project.scripts]
 kusp = "kusp.cli:main"

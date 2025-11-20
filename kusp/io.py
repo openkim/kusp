@@ -108,11 +108,13 @@ class IPProtocol:
             self._handler = load_kusp_callable(
                 self._model_file, init_kwargs=self._init_kwargs
             )
+            click.secho(f"[KUSP] {self._model_file} reloaded", fg="green", bold=True)
             logger.info(f"Reload successful from {self._model_file}")
         except Exception as exc:
             logger.exception(
                 f"Reload failed; keeping previous handler. Error: {exc}"
             )
+            click.secho(f"[KUSP] Failed to reload {self._model_file}", fg="red", bold=True)
 
     def start(self, on_ready: Optional[Callable[[], None]] = None) -> None:
         """Bind the listening socket and start accepting clients.
