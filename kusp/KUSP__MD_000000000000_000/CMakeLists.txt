@@ -62,7 +62,8 @@ target_sources(${PROJECT_NAME} PRIVATE
         KUSPModelDriverImplementation.cpp
         KUSPModelDriver.cpp
         KUSPModel.cpp
-        python_utils.cpp
+        PythonUtils.cpp
+        FileSystemGuard.cpp
 )
 
 # simple executable to test
@@ -70,7 +71,7 @@ target_sources(${PROJECT_NAME} PRIVATE
 add_executable(test_kusp
         main.cpp
         KUSPModel.cpp
-        python_utils.cpp
+        PythonUtils.cpp
 )
 
 target_include_directories(test_kusp PUBLIC .)

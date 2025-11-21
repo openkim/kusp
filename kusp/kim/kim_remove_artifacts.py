@@ -12,7 +12,14 @@ from .kim_utils import (
 
 
 def remove_kim_model(installer: str = KIM_COLLECTIONS_TOOL) -> bool:
-    """Remove the bundled Python KIM model."""
+    """Remove the previously installed portable Python model.
+
+    Args:
+        installer: ``kim-api-collections-management`` or ``kimitems`` selector.
+
+    Returns:
+        True after the removal command finishes.
+    """
     logger.info(f"Removing KUSP model via {installer}")
 
     kusp_base_path = os.path.abspath(
@@ -38,7 +45,14 @@ def remove_kim_model(installer: str = KIM_COLLECTIONS_TOOL) -> bool:
 
 
 def remove_kim_driver(installer: str = KIM_COLLECTIONS_TOOL) -> bool:
-    """Remove the bundled KIM driver."""
+    """Remove the compiled KIM bridge driver.
+
+    Args:
+        installer: ``kim-api-collections-management`` or ``kimitems`` selector.
+
+    Returns:
+        True after the removal command finishes.
+    """
     logger.info(f"Removing KUSP driver via {installer}")
 
     kusp_base_path = os.path.abspath(

@@ -71,7 +71,17 @@ def package_model_for_deployment(
     name: Optional[str] = None,
     env_mode: str,
 ) -> DeploymentPackage:
-    """Bundle a decorated model and auxiliary files into a deployable package."""
+    """Bundle a decorated model and auxiliary files into a deployable package.
+
+    Args:
+        model_file: Path to a Python module containing a ``@kusp_model`` entry.
+        resources: Extra files copied verbatim into the package directory.
+        name: Optional explicit KIM-compliant model name.
+        env_mode: ``ast``, ``pip``, or ``conda`` env description strategy.
+
+    Returns:
+        DeploymentPackage with paths to all generated artifacts.
+    """
     resources = tuple(resources or ())
     resolved_name = name or f"KUSP_{model_file.stem}__MO_111111111111_000"
     target_dir = Path(resolved_name)

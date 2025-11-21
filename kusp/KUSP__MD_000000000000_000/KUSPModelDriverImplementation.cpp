@@ -4,6 +4,7 @@
 
 #include "KIM_LogMacros.hpp"
 #include "KUSPModelDriver.hpp"
+#include "FileSystemGuard.hpp"
 
 //******************************************************************************
 #undef KIM_LOGGER_OBJECT_NAME
@@ -38,10 +39,18 @@ KUSPModelDriverImplementation::KUSPModelDriverImplementation(KIM::ModelDriverCre
         }
     }
 
-    const std::filesystem::path fully_qualified_model_file = std::filesystem::path(*param_dir_name_ptr) / model_file;
+    // const std::filesystem::path fully_qualified_model_file = std::filesystem::path(*param_dir_name_ptr) / model_file;
 
-    LOG_DEBUG("Reading Python files: " + fully_qualified_model_file.string());
-    model_ = std::make_unique<KUSPModel>(fully_qualified_model_file.string());
+    LOG_DEBUG("Reading model files: " + model_file + " from " + *param_dir_name_ptr);
+    // model_ = std::make_unique<KUSPModel>(fully_qualified_model_file.string());
+    {
+        // inside the file system guard to cd into the tmp dir and do model init for relative paths
+        FileSystemGuard guard{std::filesystem::path(*param_dir_name_ptr)};
+        LOG_DEBUG("CWD: " + std::filesystem::current_path().string());
+        model_ = std::make_unique<KUSPModel>(model_file);
+    }
+    LOG_DEBUG("Initialized KUSPModel, now back in: " + std::filesystem::current_path().string());
+
     influence_distance = model_->influence_distance;
     cutoff_distance = model_->influence_distance; // as of now no support for different cutoffs, may be in future
     modelWillNotRequestNeighborsOfNoncontributingParticles_ = true; // no support for that either

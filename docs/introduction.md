@@ -33,6 +33,17 @@ you can install any model as simply as `kim-api-collections-management install u
 Hence, while KUSP is good for prototyping, users are encouraged to covert their models
 to KIM API compatible models, and use the KIM model drivers for production runs.
 
+## Key capabilities
+
+- **Turnkey CLI** – `kusp install`, `kusp remove`, `kusp serve`, and `kusp deploy` cover the full
+  lifecycle from registering the bundled `KUSP__MO`/`KUSP__MD` artifacts to packaging a new model.
+- **Hot reload server** – `kusp serve model.py` hosts a TCP endpoint with `Ctrl+C`-based hot reload,
+  so editing the Python source immediately affects subsequent simulator calls.
+- **Rapid deployment** – `kusp deploy` snapshots your Python model along with resources,
+  environment metadata, and a `CMakeLists.txt`, creating a portable KIM model directory.
+
+See :doc:`example` for a Lennard-Jones walk-through that exercises every piece.
+
 ## KUSP Protocol
 KUSP uses a simple protocol to communicate with the KIM API. The protocol expects the
 configuration information in following order,

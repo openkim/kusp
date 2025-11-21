@@ -17,7 +17,16 @@ def install_kim_model(
     collection: str = "user",
     installer: str = KIM_COLLECTIONS_TOOL,
 ) -> bool:
-    """Install the bundled Python KIM model if needed."""
+    """Install the portable Python reference model for KUSP.
+
+    Args:
+        collection: Target KIM collection (e.g. ``user`` or ``system``) if
+            installing via ``kim-api-collections-management``.
+        installer: Either ``kim-api-collections-management`` or ``kimitems``.
+
+    Returns:
+        True once the installation command completes successfully.
+    """
     if check_if_model_installed():
         logger.info("KUSP model already installed")
         return True
@@ -54,7 +63,15 @@ def install_kim_driver(
     collection: str = "user",
     installer: str = KIM_COLLECTIONS_TOOL,
 ) -> bool:
-    """Install the bundled KIM driver if needed."""
+    """Install the native C++ driver that bridges KIM to the TCP server.
+
+    Args:
+        collection: Target KIM collection (ignored for ``kimitems``).
+        installer: ``kim-api-collections-management`` or ``kimitems``.
+
+    Returns:
+        True once the installation command completes successfully.
+    """
     if check_if_driver_installed():
         logger.info("KUSP driver already installed")
         return True

@@ -65,6 +65,53 @@ environment variable `KUSP_SERVER_CONFIG` to the path of the configuration file.
 export KUSP_SERVER_CONFIG=/path/to/kusp_server_config.yaml
 ```
 
+## Command-line interface
+The `kusp` executable exposes every workflow that the package automates:
+
+- `kusp install {model|driver}` installs the bundled portable Python model (`KUSP__MO_...`) or
+  the companion native KIM driver (`KUSP__MD_...`) into the selected KIM collection.
+- `kusp remove {model|driver}` removes those artifacts.
+- `kusp serve <model.py>` starts the hot-reload capable TCP server. Pressing `Ctrl+C` once reloads
+  the Python file from disk, pressing it twice within two seconds shuts the server down.
+- `kusp deploy <model.py>` materializes a new portable model directory that contains the decorated
+  Python module, any resource files, an environment description, and a ready-to-build CMake project.
+
+All commands honor `-v`/`-vv` for logging just like the Python API.
+
+## Rapid Lennard-Jones prototyping example
+The `example/lennard_jones` directory demonstrates the complete workflow:
+
+1. **Write a decorated model**: `example/lennard_jones/lj.py` uses `@kusp_model` to expose a pure
+   Python Lennard-Jones potential. The `test_lj.py` script shows how to exercise it through ASE.
+2. **Install the shim artifacts**:
+   ```bash
+   kusp install model
+   kusp install driver
+   ```
+   These commands register `KUSP__MO_000000000000_000` and `KUSP__MD_000000000000_000` inside the
+   selected KIM collections so that simulators such as LAMMPS can discover them.
+3. **Serve with hot reload**:
+   ```bash
+   kusp serve example/lennard_jones/lj.py --kusp-config example/kusp_config.yaml
+   ```
+   Keep this terminal open while developing. Edit `lj.py`, save, and press `Ctrl+C` once to reload
+   without disconnecting clients; press `Ctrl+C` twice quickly to stop the server.
+4. **Test from C++ simulators**: In another terminal export the config path
+   (`export KUSP_CONFIG=$PWD/example/kusp_config.yaml`) and run LAMMPS with the provided input deck
+   (`cd example/lennard_jones && lmp -in lmp_lj.in`). The driver in
+   `kusp/KUSP__MD_000000000000_000/` forwards requests to the TCP server so you get immediate
+   feedback from a real simulator.
+5. **Package for re-use**:
+   ```bash
+   kusp deploy example/lennard_jones/lj.py -n KUSP_lj__MO_111111111111_000
+   ```
+   The command copies the hashed Python module, optional resources, environment description, and a
+   `CMakeLists.txt` into `example/lennard_jones/KUSP_lj__MO_111111111111_000`, ready for
+   `kim-api-collections-management install`.
+
+This loop lets you iterate on potentials in pure Python while keeping interoperability with
+existing KIM tooling and C++ simulators.
+
 ## Citation
 If you use KUSP in your research, or find it useful, please cite the following paper, [accessible here](https://openreview.net/forum?id=lQAnpCF7nq).
 

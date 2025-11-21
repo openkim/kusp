@@ -21,6 +21,11 @@ from .utils import (
 )
 
 
+def _cli_message(message: str, *, fg: str = "cyan", bold: bool = False) -> None:
+    """Emit a consistently formatted CLI message. Impportant stuff only"""
+    click.secho(f"[KUSP] [CLI] {message}", fg=fg, bold=bold)
+
+
 @click.group(
     help="KUSP utilities.",
     context_settings={"ignore_unknown_options": True},
@@ -67,11 +72,11 @@ def cmd_install(item: str, collection: str, installer: str) -> None:
     if item == "model":
         logger.info("Installing KUSP model.")
         install_kim_model(collection=collection, installer=installer)
-        click.echo("Installed KUSP KIM model.")
+        _cli_message("Installed KUSP KIM model.", fg="green", bold=True)
     elif item == "driver":
         logger.info("Installing KUSP driver.")
         install_kim_driver(collection=collection, installer=installer)
-        click.echo("Installed KUSP KIM driver.")
+        _cli_message("Installed KUSP KIM driver.", fg="green", bold=True)
     else:
         logger.error("Unknown installation type.")
         raise TypeError(f"Unknown installation type: {item}")
@@ -99,11 +104,11 @@ def cmd_remove(item: str, installer: str) -> None:
     if item == "model":
         logger.info("Removing KUSP model.")
         remove_kim_model(installer=installer)
-        click.echo("Removed KUSP KIM model.")
+        _cli_message("Removed KUSP KIM model.", fg="yellow")
     elif item == "driver":
         logger.info("Removing KUSP driver.")
         remove_kim_driver(installer=installer)
-        click.echo("Removed KUSP KIM driver.")
+        _cli_message("Removed KUSP KIM driver.", fg="yellow")
     else:
         logger.error("Unknown installation type.")
         raise TypeError(f"Unknown installation type: {item}")
@@ -172,12 +177,10 @@ def cmd_serve(
     cfg_path = write_or_update_config(
         config_path=cfg_path, host=host, port=port, model_file=str(file)
     )
-    click.echo(
-        click.style(
-            f"[KUSP] Config: {cfg_path} | Please set KUSP_CONFIG env var to this value for running KUSP model adapter.",
-            bold=True,
-            italic=True,
-        )
+    _cli_message(
+        f"Config written to {cfg_path}. Export KUSP_CONFIG to point simulators at this server.",
+        fg="green",
+        bold=True,
     )
     server = IPProtocol(
         host=host,
@@ -232,13 +235,15 @@ def cmd_deploy(
     name: Optional[str],
     env_mode: str,
 ):
-    click.echo(f"Preparing deployment package for {model_file}")
+    _cli_message(f"Preparing deployment package for {model_file}", fg="cyan")
     if resources:
         res_str = " ".join(str(f) for f in resources)
-        click.echo(f"Including resources: {res_str}")
+        _cli_message(f"Including resources: {res_str}", fg="cyan")
 
     env_mode = env_mode.lower()
-    click.echo(f"Generating environment description using mode: {env_mode!r}")
+    _cli_message(
+        f"Generating environment description using mode: {env_mode!r}", fg="cyan"
+    )
 
     package = package_model_for_deployment(
         model_file=model_file,
@@ -247,10 +252,14 @@ def cmd_deploy(
         env_mode=env_mode,
     )
 
-    click.echo(f"Deploying {model_file} as {package.model_name}")
-    click.echo(f"Wrote environment description: {package.env_file.name}")
-    click.echo(
-        f"Model {package.model_name} written in directory: {package.target_dir}"
+    _cli_message(f"Deploying {model_file} as {package.model_name}", fg="green")
+    _cli_message(
+        f"Wrote environment description: {package.env_file.name}", fg="green"
+    )
+    _cli_message(
+        f"Model {package.model_name} written in directory: {package.target_dir}",
+        fg="green",
+        bold=True,
     )
 
 

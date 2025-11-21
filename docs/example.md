@@ -1,63 +1,70 @@
-# Deploying IntelMatSciML models
-## Example folder
-Please see the example folder of the github repository for the complete example.
-Basic steps includes,
-1. Installing the accompanying KUSP portable model,
+# Rapid Lennard-Jones deployment walkthrough
+The `example/lennard_jones` directory in the repository contains a full, reproducible
+workflow that exercises every KUSP feature: decorating a Python potential, hot-reload serving,
+LAMMPS/ASE integration through the bundled driver, and packaging a deployable KIM item.
+
+## 1. Decorate a Python potential
+`example/lennard_jones/lj.py` defines a Lennard-Jones potential using the `@kusp_model`
+decorator. Only three inputs—species, positions, contributing mask—are required:
+
 ```python
-import kusp
-kusp.install_kim_model()
-```
-By default it installs the model driver under `user` collection, 
-which keeps the models at `~/.kim-api/2.3.0.../model-drivers-dir` directory.
-But you can select other kim-api collections by passing appropriate option
-to the `install_kim_model` function. (Please check KIM-API documentation for more details
-on collections and model installation).
-```python
-import kusp
-kusp.install_kim_model(collection='CWD')
-#or
-kusp.install_kim_model(collection='system')
+from kusp import kusp_model
+
+@kusp_model(influence_distance=2.6, species=("He",))
+class LJ:
+    def __call__(self, species, positions, contributing):
+        ...
+        return energy, forces
 ```
 
-2. Running the kusp server
-```bash
-python serve_matsciml_models.py
-```
-This would start the server at `localhost:12345` by default, and serve a
-M3GNET model from IntelMatSciML package. Please note that this model is untrained,
-and is only for demonstration purposes. None of the results it produces are valid.
+The same file can be imported directly into Python for quick unit tests or served through KUSP.
 
-3. Running the KIM API client
-```bash
-python client_ase.py
-```
-or 
-```bash
-cd lammps
-lmp -in lmp_m3gnet.in
-```
-Now inferring the model using KUSP is as simple as running the KIM Model.
+## 2. Install the shim artifacts
+Before simulators can talk to the TCP server, install the portable model and the C++
+driver that lives in `kusp/KUSP__MD_000000000000_000/`:
 
-> Use `KUSP__MO_000000000000_000` in KIM models to run the model.
-
-## Running KIM Tests in KDP
-To run the kim tests, you currently need few extra steps after starting the server,
-1. Copy the `KUSP__MO_000000000000_000` folder in the `/home/openkim/models` directory.
-2. Edit the `/home/openkim/models/KUSP__MO_000000000000_000/kimspec.edn` file to include the species you want to test the model against,
-```clojure
- ...
- "maintainer-id" "729049db-685a-43b1-97a8-617daa2586ba"
- "publication-year" "2024"
- "species" ["Si" "Cu"]
- ...
-```
-3. Install the desired tests,
 ```bash
-kimitems -D install LatticeConstantCubicEnergy_fcc_Si__TE_828776015817_007
-```
-4. Run the tests using the pipeline tools,
-```bash
-pipeline-run-pair LatticeConstantCubicEnergy_fcc_Si__TE_828776015817_007 KUSP__MO_000000000000_000 -v
+kusp install model
+kusp install driver
 ```
 
-You should now see the tests running against the model.
+Both commands accept `--installer`/`--collection` flags to target specific KIM setups.
+
+## 3. Serve with hot reload
+Launch the TCP server and point it at `lj.py`:
+
+```bash
+kusp serve example/lennard_jones/lj.py --kusp-config example/kusp_config.yaml
+```
+
+The terminal now shows `[KUSP] TCP server listening ...`. Edit `lj.py`, save, and press `Ctrl+C`
+once to hot reload. Press `Ctrl+C` twice within two seconds to shut the server down. The generated
+config file (printed when the server starts) must be exported as `KUSP_CONFIG` for simulators.
+
+## 4. Talk to KIM-enabled simulators
+With the server running and `KUSP_CONFIG` exported, any simulator that understands KIM-API can
+consume the portable `KUSP__MO...` model. The example folder contains:
+
+- `example/lennard_jones/test_lj.py` – runs ASE + `KIM("KUSP_lj__MO_111111111111_000")`.
+- `example/lennard_jones/lmp_lj.in` – a ready-to-run LAMMPS script.
+
+Both illustrate that the `KUSP__MD...` driver forwards calls to the Python server.
+
+## 5. Package for redistribution
+Once satisfied with the model, create a distributable portable model directory:
+
+```bash
+kusp deploy example/lennard_jones/lj.py \
+    -n KUSP_lj__MO_111111111111_000 \
+    --env ast
+```
+
+The command copies the hashed Python module, every `--resource`, an environment description, and a
+`CMakeLists.txt` into `example/lennard_jones/KUSP_lj__MO_111111111111_000/`. You can zip that folder
+or install it with `kim-api-collections-management install`.
+
+## Running KIM tests in KDP
+To run KIM verification tests in KDP, synchronize the generated model directory into the
+`/home/openkim/models` tree, edit `kimspec.edn` to list the supported species, and use `kimitems`
+to install the desired tests. Finally run `pipeline-run-pair <TEST> KUSP__MO_000000000000_000 -v`
+to exercise the server-backed model under the pipeline tooling.

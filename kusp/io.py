@@ -11,6 +11,11 @@ from loguru import logger
 from .utils import load_kusp_callable, recv_exact
 
 
+def _server_message(message: str, *, fg: str = "green") -> None:
+    """Emit a consistent runtime status banner."""
+    click.secho(f"[KUSP] [SERVER] {message}", fg=fg, bold=True)
+
+
 class IPProtocol:
     """Serve KUSP models over a TCP socket."""
 
@@ -74,21 +79,15 @@ class IPProtocol:
             now = time.monotonic()
             if now - self._last_sigint_ts <= self._sigint_window_sec:
                 self._shutdown_requested = True
-                click.echo(
-                    click.style(
-                        f"[KUSP] Two Ctrl-C within {self._sigint_window_sec:.1f}s; SHUTTING DOWN.",
-                        fg="red",
-                        bold=True,
-                    )
+                _server_message(
+                    f"Two Ctrl-C within {self._sigint_window_sec:.1f}s; shutting down.",
+                    fg="red",
                 )
             else:
                 self._reload_requested = True
-                click.echo(
-                    click.style(
-                        f"[KUSP] Reloading the model ... (to shutdown press Ctrl-C twice within {self._sigint_window_sec:.1f} sec).",
-                        fg="green",
-                        bold=True,
-                    )
+                _server_message(
+                    "Reloading model (Ctrl-C twice quickly to exit).",
+                    fg="yellow",
                 )
             self._last_sigint_ts = now
 
@@ -108,13 +107,12 @@ class IPProtocol:
             self._handler = load_kusp_callable(
                 self._model_file, init_kwargs=self._init_kwargs
             )
-            click.secho(f"[KUSP] {self._model_file} reloaded", fg="green", bold=True)
-            logger.info(f"Reload successful from {self._model_file}")
+            _server_message(f"{self._model_file} reloaded")
         except Exception as exc:
-            logger.exception(
-                f"Reload failed; keeping previous handler. Error: {exc}"
+            _server_message(
+                f"Failed to reload {self._model_file}; keeping previous handler.",
+                fg="red",
             )
-            click.secho(f"[KUSP] Failed to reload {self._model_file}", fg="red", bold=True)
 
     def start(self, on_ready: Optional[Callable[[], None]] = None) -> None:
         """Bind the listening socket and start accepting clients.
@@ -134,15 +132,7 @@ class IPProtocol:
 
         self.server_socket = server_socket
         self._running = True
-        logger.debug(f"KUSP TCP server listening on {self.host}:{self.port}")
-        click.echo(
-            click.style(
-                f"[KUSP] TCP server listening on {self.host}:{self.port}",
-                bold=True,
-                italic=True,
-                fg="green",
-            )
-        )
+        _server_message(f"TCP server listening on {self.host}:{self.port}")
 
         self._install_sigint_handler()
 

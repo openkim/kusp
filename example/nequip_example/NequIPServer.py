@@ -5,17 +5,15 @@ Run the server as:
 python NequIPServer.py /path/to/model.pt /path/to/config.yml
 """
 
-from __future__ import annotations
-
 import argparse
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import ase
 import ase.neighborlist
 import numpy as np
 import torch
 
-from kusp import KUSP, Properties, Structure
+from kusp import kusp_model 
 
 
 def neighbor_list_and_relative_vec(
@@ -51,46 +49,23 @@ def neighbor_list_and_relative_vec(
     return edge_index, shifts, cell
 
 
-class NequIP(KUSP):
-    def __init__(self, model: torch.jit.ScriptModule, server_config: str | Dict[str, Any]):
-        # This particular NequIP model has two special points to consider:
-        # 1. The model computes the gradients in the second last layer, so we stop there to avoid
-        #    torch throwing away gradient information before we differentiate.
-        # 2. Because we short-circuit the final layer, we apply the scaling and reference shift
-        #    manually after running the truncated network.
+@kusp_model(influence_distance=12.0, species=["Si"])
+class NequIP:
+    def __init__(self, model: str = "./deployed_nequip.pt"): # <- default args if possible
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+        model = torch.jit.load(model, map_location=device)
         model_to_eval = list(list(model.children())[0].children())[0]
         model_to_eval = model_to_eval.to(device=device, dtype=torch.float64)
 
-        super().__init__(model_to_eval, server_config)
-
-        config = self.protocol_configuration
-        global_info = config.get("global", {})
-        if not global_info:
-            raise ValueError("Global configuration block missing required parameters.")
-
-        influence_distance = global_info.get("influence_distance")
-        if influence_distance is None:
-            raise ValueError("Global configuration must define 'influence_distance'.")
-
-        self.cutoff = influence_distance / 3.0
-        self.species = global_info.get("elements", [])
-
+        self.model = model_to_eval
+        self.cutoff = 12.0 / 3.0
         self.device = device
         self.scale_by = getattr(model, "scale_by", 1.0)
         self.SI_REF = torch.tensor(-157.7272, device=device, dtype=torch.float64)
 
-    def prepare_model_inputs(self, structure: Structure) -> Dict[str, Any]:
-        positions = np.asarray(structure.positions, dtype=np.float64)
-        atomic_numbers = np.asarray(structure.atomic_numbers, dtype=np.int64)
-        contributing_atoms = structure.contributing
-        if contributing_atoms is None:
-            contributing_atoms = np.ones(len(atomic_numbers), dtype=np.float64)
-        else:
-            contributing_atoms = np.asarray(contributing_atoms, dtype=np.float64)
-
+    def __call__(self, species: np.ndarray, positions:np.ndarray, contributing:np.ndarray)-> Tuple[np.ndarray, np.ndarray]: # match the input signature
         edge_index, shifts, cell = neighbor_list_and_relative_vec(
             pos=positions,
             r_max=self.cutoff,
@@ -98,51 +73,35 @@ class NequIP(KUSP):
             strict_self_interaction=True,
         )
 
+        pos = torch.tensor(
+            positions, dtype=torch.float64, requires_grad=True, device=self.device
+        )
+        cell = torch.tensor(cell, dtype=torch.float64, device=self.device)
+        atom_types = torch.tensor(species, dtype=torch.long, device=self.device)
+        edge_index = torch.tensor(edge_index, dtype=torch.long, device=self.device)
+        edge_cell_shift = torch.tensor(shifts, dtype=torch.float64, device=self.device)
+        contributing_atoms = torch.tensor(
+            contributing, dtype=torch.float64, device=self.device
+        )
         input_dict = {
-            "pos": torch.tensor(
-                positions, dtype=torch.float64, requires_grad=True, device=self.device
-            ),
-            "cell": torch.tensor(cell, dtype=torch.float64, device=self.device),
-            "atom_types": torch.tensor(atomic_numbers, dtype=torch.long, device=self.device),
-            "edge_index": torch.tensor(edge_index, dtype=torch.long, device=self.device),
-            "edge_cell_shift": torch.tensor(shifts, dtype=torch.float64, device=self.device),
-            "_contributing_atoms": torch.tensor(
-                contributing_atoms, dtype=torch.float64, device=self.device
-            ),
-        }
-        return {"input_dict": input_dict}
-
-    def execute_model(self, **kwargs: Any) -> Dict[str, Any]:
-        input_dict = kwargs["input_dict"]
-        output = self.exec_func(input_dict)
+                "pos": pos,
+                "cell": cell,
+                "atom_types": atom_types,
+                "edge_index": edge_index,
+                "edge_cell_shift": edge_cell_shift,
+                }
+        output = self.model(input_dict)
 
         energy = (
             (output["atomic_energy"].squeeze() * self.scale_by - self.SI_REF)
-            * input_dict["_contributing_atoms"]
+            * contributing_atoms
         ).sum()
         energy.backward()
 
-        forces = -input_dict["pos"].grad
-        return {
-            "energy": energy.detach().cpu().numpy(),
-            "forces": forces.detach().cpu().numpy(),
-        }
+        forces = -pos.grad
+        energy = energy.detach().cpu().numpy()
+        forces = forces.detach().cpu().numpy()
 
-    def prepare_model_outputs(self, results: Dict[str, Any]) -> Properties:
-        energy = np.atleast_1d(np.asarray(results["energy"], dtype=np.float64))
-        forces = np.asarray(results["forces"], dtype=np.float64)
-        return Properties(energy=energy, forces=forces)
+        forces = np.asarray(forces, dtype=np.float64)
+        return energy, forces
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="NequIP server")
-    parser.add_argument("model", type=str, help="Path to the model")
-    parser.add_argument("config", type=str, help="Path to the config file")
-    args = parser.parse_args()
-
-    model = torch.jit.load(args.model).to(dtype=torch.float64)
-    server = NequIP(model, args.config)
-    server.serve()
-
-
-if __name__ == "__main__":
-    main()

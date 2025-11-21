@@ -3,9 +3,9 @@ from ase import Atoms, io
 from ase.calculators.kim import KIM
 
 # Initialize KIM Model
-model2 = KIM("KUSP__MO_000000000000_000")
+#model2 = KIM("KUSP__MO_000000000000_000")
 # model2 = KIM("NEQUIP_L1_4A_GAP_Si__MO_000000000000_000")
-
+model2 = KIM("KUSP_NequIPServer__MO_111111111111_000")
 
 config = io.read("./Si.xyz")
 
