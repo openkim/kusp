@@ -29,7 +29,7 @@ kusp = "kusp.cli:main"
 include-package-data = true
 
 [tool.setuptools.packages.find]
-include = ["kusp"]
+include = ["kusp", "kusp.*"]
 
 [tool.setuptools.package-data]
 kusp = [

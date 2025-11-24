@@ -7,22 +7,6 @@ if (flg)
 endif ()
 message("Build Type: ${CMAKE_BUILD_TYPE}")
 
-# TODO: Log this error and behaviour
-#-- Found KIM-API: /opt/kim_api/install/lib/libkim-api.so.2.4.1
-#CMake Error at /opt/kim_api/install/share/cmake/kim-api-items/kim-api-items-macros.cmake:515 (message):
-#  Unable to locate 'base64-encode' utility
-#Call Stack (most recent call first):
-#  /opt/kim_api/install/share/cmake/kim-api-items/kim-api-items-macros.cmake:597 (_add_custom_command_blob_to_cpp)
-#  /opt/kim_api/install/share/cmake/kim-api-items/kim-api-items-macros.cmake:785 (_encode_process_files)
-#  /opt/kim_api/install/share/cmake/kim-api-items/kim-api-items-macros.cmake:145 (_add_kim_api_library)
-#  CMakeLists.txt:24 (add_kim_api_model_driver_library)
-#
-#
-#-- Configuring incomplete, errors occurred!
-#See also "/home/amit/Projects/FERMAT/KLIFF_Serve/kliff_serve/kusp/KUSP__MD_000000000000_000/tmp2/CMakeFiles/CMakeOutput.log".
-
-# TODO: log the python already interpreter error too
-
 # KIM-API setup --------------------------------------------------
 list(APPEND CMAKE_PREFIX_PATH $ENV{KIM_API_CMAKE_PREFIX_DIR})
 find_package(KIM-API-ITEMS 2.2 REQUIRED CONFIG)
@@ -36,6 +20,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Python setup ------------------------------------------
+# sometimes cmake needs a little help for Python
+if(DEFINED ENV{KUSP_PYTHON_EXEC})
+    set(Python3_EXECUTABLE "$ENV{KUSP_PYTHON_EXEC}")
+endif()
+
 find_package(Python3 COMPONENTS Development Interpreter REQUIRED)
 
 # Debug messages to ensure correct python is detected

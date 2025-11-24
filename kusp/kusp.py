@@ -4,6 +4,31 @@ from typing import Tuple, Union
 
 import numpy as np
 from loguru import logger
+import sys
+
+
+def _ensure_default_logging(default_level: str = "WARNING") -> None:
+    """
+    If loguru is still in default state (single handler id=0), replace
+    the default DEBUG handler with a quieter one, mostly for C++ interface.
+    Otherwise defaults to debug and C++ side becoms too noisy.
+
+    Avoids overriding when logging is already configured.
+    Only catches internal-structure-related exceptions, not interrupts.
+    """
+    try:
+        handlers = logger._core.handlers  # internal access but stable enough
+        if len(handlers) == 1:
+            handler = next(iter(handlers.values()))
+            handler_id = getattr(handler, "_id", None)
+
+            if handler_id == 0:
+                logger.remove()
+                # logger.add(sys.stderr, level=default_level)
+                # print("in c++")
+
+    except (KeyError, AttributeError, TypeError):
+        return
 
 
 def kusp_model(
@@ -26,13 +51,16 @@ def kusp_model(
     Returns:
         Decorating function that adds bookkeeping attributes.
     """
+    _ensure_default_logging()
 
     def _decorator(functor):
+        logger.debug(f"Received influence_distance: {influence_distance}, for object {functor}")
         if strict_arg_check:
-            logger.info("Using strict arg check; pass strict_arg_check=False to only warn.")
+            logger.debug("Using strict arg check; pass strict_arg_check=False to only warn.")
 
         # Pick target: function or class.__call__
         target = functor.__call__ if inspect.isclass(functor) else functor
+        logger.debug(f"Got the functor: {target}")
 
         if target is not None:
             sig = inspect.signature(target)
@@ -67,6 +95,7 @@ def kusp_model(
                 and typing.get_args(r)[1] is np.ndarray
             ):
                 msg = "Missing/incorrect return type hint; expected Tuple[np.ndarray, np.ndarray]."
+                msg += "Either provide concrete hints or pass strict_arg_check=False argument in decorator."
                 logger.error(msg)
                 raise TypeError(msg)
 
@@ -75,6 +104,7 @@ def kusp_model(
         functor.__kusp_metadata__ = metadata
         functor.__kusp_influence_distance__ = influence_distance
         functor.__kusp_species__ = species
+        logger.debug(f"All done, returning the object: {functor.__dict__}")
         return functor
 
     return _decorator

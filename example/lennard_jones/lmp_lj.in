@@ -1,0 +1,29 @@
+# Initialize KIM Model
+#kim init KUSP__MO_000000000000_000 metal
+kim init KUSP_lj__MO_111111111111_000  metal
+
+# Load data and define atom type
+# He Lattice, FCC
+lattice fcc 3.165
+region box block 0 4 0 4 0 4
+create_box 1 box
+create_atoms 1 box
+
+# Define interatomic potential
+kim interactions He
+mass 1 4.0
+
+neighbor 1.0 bin
+neigh_modify every 1 delay 0 check no
+
+# 64 -> 512 particles
+replicate 2 2 2
+
+# Create randome velocities and fix thermostat
+velocity all create 300.0 4928459 rot yes dist gaussian
+fix 1 all nvt temp 300.0 300.0 $(100.0*dt)
+
+# Run simulation
+timestep 0.001
+thermo 1
+run    50

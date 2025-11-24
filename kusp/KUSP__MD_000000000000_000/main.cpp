@@ -1,16 +1,23 @@
+#include <filesystem>
+#include <iostream>
 #include <pybind11/embed.h>
 #include "KUSPModel.hpp"
-#include <iostream>
 
 namespace py = pybind11;
 
-int main() {
+int main(int argc, char** argv) {
     // Start Python interpreter
     // py::scoped_interpreter guard{};
 
-    KUSPModel model("./lj.py");
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <path>" << std::endl;
+        return -1;
+    }
 
-    std::vector<int> species = {2, 2};
+    auto path = std::filesystem::path(argv[1]);
+    const KUSPModel model(path);
+
+    std::vector<int> species = {0, 0};
     std::vector<double> positions = {0.1,0.1,0.1, 2.0,-0.2,0};
     std::vector<int> contrib = {1, 1};
 

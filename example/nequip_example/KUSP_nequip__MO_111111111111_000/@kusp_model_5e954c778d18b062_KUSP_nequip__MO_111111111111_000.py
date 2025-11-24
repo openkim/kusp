@@ -65,7 +65,7 @@ class NequIP:
         self.scale_by = getattr(model, "scale_by", 1.0)
         self.SI_REF = torch.tensor(-157.7272, device=device, dtype=torch.float64)
 
-    def __call__(self, species: np.ndarray, positions: np.ndarray, contributing: np.ndarray) -> Tuple[np.ndarray, np.ndarray]: # match the input signature
+    def __call__(self, species: np.ndarray, positions:np.ndarray, contributing:np.ndarray)-> Tuple[np.ndarray, np.ndarray]: # match the input signature
         edge_index, shifts, cell = neighbor_list_and_relative_vec(
             pos=positions,
             r_max=self.cutoff,

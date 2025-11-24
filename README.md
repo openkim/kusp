@@ -40,7 +40,7 @@ to KIM API compatible models, and use the KIM model drivers for production runs.
 KUSP uses a simple protocol to communicate with the KIM API. The protocol expects the
 configuration information in following order,
 
-```plaintext
+```text
     [Necessary] First 4 bytes: size of integer on the system (int_width), 32 bit integer
     [Necessary] Next int_width bytes: number of atoms (n_atoms), default int_width integer
     [Necessary] Next int_width x n_atoms bytes: atomic numbers
@@ -73,7 +73,7 @@ The `kusp` executable exposes every workflow that the package automates:
 - `kusp remove {model|driver}` removes those artifacts.
 - `kusp serve <model.py>` starts the hot-reload capable TCP server. Pressing `Ctrl+C` once reloads
   the Python file from disk, pressing it twice within two seconds shuts the server down.
-- `kusp deploy <model.py>` materializes a new portable model directory that contains the decorated
+- `kusp export <model.py>` materializes a new portable model directory that contains the decorated
   Python module, any resource files, an environment description, and a ready-to-build CMake project.
 
 All commands honor `-v`/`-vv` for logging just like the Python API.
@@ -103,7 +103,7 @@ The `example/lennard_jones` directory demonstrates the complete workflow:
    feedback from a real simulator.
 5. **Package for re-use**:
    ```bash
-   kusp deploy example/lennard_jones/lj.py -n KUSP_lj__MO_111111111111_000
+   kusp export example/lennard_jones/lj.py -n KUSP_lj__MO_111111111111_000
    ```
    The command copies the hashed Python module, optional resources, environment description, and a
    `CMakeLists.txt` into `example/lennard_jones/KUSP_lj__MO_111111111111_000`, ready for
@@ -111,6 +111,9 @@ The `example/lennard_jones` directory demonstrates the complete workflow:
 
 This loop lets you iterate on potentials in pure Python while keeping interoperability with
 existing KIM tooling and C++ simulators.
+
+Looking for heavier models? Check `docs/nequip_example.md` for the NequIP walkthrough and
+`docs/jax_example.md` for the JAX MD flow—both follow the exact same steps.
 
 ## Citation
 If you use KUSP in your research, or find it useful, please cite the following paper, [accessible here](https://openreview.net/forum?id=lQAnpCF7nq).

@@ -199,8 +199,8 @@ def cmd_serve(
 
 
 @cli.command(
-    "deploy",
-    help="Package a KUSP model and its auxiliary files for deployment.",
+    "export",
+    help="Package a KUSP model and its auxiliary files for exporting.",
 )
 @click.argument(
     "model_file", type=click.Path(exists=True, dir_okay=False, path_type=Path)
@@ -229,13 +229,13 @@ def cmd_serve(
     show_default=True,
     help="How to generate environment description: 'ast' (imports-based minimal env), 'pip' (pip freeze), 'conda' (conda env export).",
 )
-def cmd_deploy(
+def cmd_export(
     model_file: Path,
     resources: Tuple[Path, ...],
     name: Optional[str],
     env_mode: str,
 ):
-    _cli_message(f"Preparing deployment package for {model_file}", fg="cyan")
+    _cli_message(f"Preparing export package for {model_file}", fg="cyan")
     if resources:
         res_str = " ".join(str(f) for f in resources)
         _cli_message(f"Including resources: {res_str}", fg="cyan")
@@ -252,7 +252,7 @@ def cmd_deploy(
         env_mode=env_mode,
     )
 
-    _cli_message(f"Deploying {model_file} as {package.model_name}", fg="green")
+    _cli_message(f"Exporting {model_file} as {package.model_name}", fg="green")
     _cli_message(
         f"Wrote environment description: {package.env_file.name}", fg="green"
     )
@@ -273,7 +273,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         Process exit code provided by Click.
     """
     try:
-        cli.main(args=argv, prog_name="kusp", standalone_mode=False)
+        cli.main(args=argv, prog_name="kusp", standalone_mode=True)
         return 0
     except SystemExit as e:
         return int(e.code)

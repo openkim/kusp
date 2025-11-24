@@ -3,17 +3,10 @@ from ase import Atoms, io
 from ase.calculators.kim import KIM
 
 # Initialize KIM Model
+model = KIM("KUSP_JAXSiSW__MO_111111111111_000")
 
-# Initialize the KUSP model for KUSP Serve
-# model = KIM("KUSP__MO_000000000000_000")
-
-# Use the exported model with KUSP model the model driver
-model = KIM("KUSP_nequip__MO_111111111111_000")
-
-# read the config
 config = io.read("./Si.xyz")
 
-# Set it as calculator
 config.calc = model
 
 # Compute energy/forces

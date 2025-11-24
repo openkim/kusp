@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to KIM Serve's documentation!
+Welcome to KUSP 2.0 documentation!
 =====================================
 
 .. toctree::
@@ -11,8 +11,12 @@ Welcome to KIM Serve's documentation!
    :caption: Contents:
 
    introduction.md
+   installation.md
    example.md
    nequip_example.md
+   jax_example.md
+   api.md
+   troubleshooting.md
 
 Indices and tables
 ==================
