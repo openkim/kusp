@@ -58,7 +58,6 @@ kusp serve example/jax_example/JAXSiSW.py \
 ```bash
 kusp export example/jax_example/JAXSiSW.py \
     -n KUSP_JAXSiSW__MO_111111111111_000 \
-    --resource example/jax_example/Si.xyz \
     --env pip
 ```
 

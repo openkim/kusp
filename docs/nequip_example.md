@@ -51,8 +51,8 @@ The server prints the config path; export it as `KUSP_CONFIG` for any simulator 
 
 The folder contains helper scripts:
 
-- `native_nequip.py` – evaluates the checkpoint directly with PyTorch.
-- `eval_torch_nequip_kusp.py` – talks to the running KUSP server and compares predictions.
+- `native_nequip.py`: evaluates the checkpoint directly with PyTorch.
+- `eval_torch_nequip_kusp.py`: talks to the running KUSP server and compares predictions.
 
 You can also drive the server from ASE (`from ase.calculators.kim import KIM`) or LAMMPS by simply
 selecting the portable model name (`KUSP__MO_000000000000_000` or whatever you deploy later) once

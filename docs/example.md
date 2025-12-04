@@ -48,8 +48,8 @@ config file (printed when the server starts) must be exported as `KUSP_CONFIG` f
 With the server running and `KUSP_CONFIG` exported, any simulator that understands KIM-API can
 consume the portable `KUSP__MO...` model. The example folder contains:
 
-- `example/lennard_jones/test_lj.py` – runs ASE + `KIM("KUSP_lj__MO_111111111111_000")`.
-- `example/lennard_jones/lmp_lj.in` – a ready-to-run LAMMPS script.
+- `example/lennard_jones/test_lj.py`: runs ASE + `KIM("KUSP_lj__MO_111111111111_000")`.
+- `example/lennard_jones/lmp_lj.in`: a ready-to-run LAMMPS script.
 
 Both illustrate that the `KUSP__MD...` driver forwards calls to the Python server.
 

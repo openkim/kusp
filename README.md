@@ -113,7 +113,7 @@ This loop lets you iterate on potentials in pure Python while keeping interopera
 existing KIM tooling and C++ simulators.
 
 Looking for heavier models? Check `docs/nequip_example.md` for the NequIP walkthrough and
-`docs/jax_example.md` for the JAX MD flow—both follow the exact same steps.
+`docs/jax_example.md` for the JAX MD flow.
 
 ## Citation
 If you use KUSP in your research, or find it useful, please cite the following paper, [accessible here](https://openreview.net/forum?id=lQAnpCF7nq).

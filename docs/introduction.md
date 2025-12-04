@@ -44,11 +44,11 @@ and all the dependencies installed, you can install any KUSP exported model as s
 
 ## Key capabilities
 
-- **Turnkey CLI** – `kusp install`, `kusp serve`, and `kusp export` cover the full
+- **Turnkey CLI**: `kusp install`, `kusp serve`, and `kusp export` cover the full
   lifecycle from registering the bundled portable model and driver artifacts to packaging a new model.
-- **Hot reload server** – `kusp serve model.py` hosts a TCP endpoint with `Ctrl+C`-based hot reload,
+- **Hot reload server**: `kusp serve model.py` hosts a TCP endpoint with `Ctrl+C`-based hot reload,
   so editing the Python source immediately affects subsequent simulator calls.
-- **Rapid export** – `kusp export` snapshots your Python model along with resources,
+- **Rapid export**: `kusp export` snapshots your Python model along with resources,
   environment metadata, creating a portable KIM model.
 
 See :doc:`example` for a walk-through that exercises every piece.
